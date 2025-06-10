@@ -3,13 +3,15 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { NotificationService } from './services/notification.service';
 import { NotificationsController } from './notifications.controller';
-import { User, UserSchema } from '../auth/schemas/user.schema';
 import Expo from 'expo-server-sdk';
+import { Delegate, DelegateSchema } from '../delegates/delegates.schema';
 
 @Module({
   imports: [
     ConfigModule,
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: Delegate.name, schema: DelegateSchema },
+    ]),
   ],
   controllers: [NotificationsController],
   providers: [NotificationService, { provide: Expo, useValue: new Expo() }],

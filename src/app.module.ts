@@ -5,6 +5,8 @@ import { LoggerMiddleware } from './middleware/logger.middleware';
 import { ScheduleModule } from '@nestjs/schedule';
 import { SystemLogsModule } from './modules/system-logs/system-logs.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
+import { DelegatesModule } from './modules/delegates/delegate.module';
+import { QueuesModule } from './modules/queues/queues.module';
 @Module({
   imports: [
     ScheduleModule.forRoot(),
@@ -12,6 +14,8 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
     DatabaseModule,
     SystemLogsModule,
     NotificationsModule,
+    DelegatesModule,
+    QueuesModule,
   ],
   controllers: [],
   providers: [],
