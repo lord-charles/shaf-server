@@ -118,7 +118,7 @@ export class BadgeService {
 
     // Add SHAF text in the circle
     ctx.fillStyle = '#26A69A';
-    ctx.font = `bold 16px ${fontFamily}`;
+    ctx.font = `bold 17px ${fontFamily}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('SHAF', 90, 70);
