@@ -24,10 +24,23 @@ export enum IdentificationType {
 
 export enum DelegateType {
   BOARD_MEMBER = 'board_member',
-  SHAREHOLDER = 'shareholder',
   OBSERVER = 'observer',
   GUEST = 'guest',
-  STAFF = 'staff',
+  SHAF_STAFF = 'shaf_staff',
+  MINISTRY_STAFF = 'ministry_staff',
+  PRESS = 'press',
+  OTHER = 'other',
+}
+
+export enum Title {
+  MR = 'Mr.',
+  MRS = 'Mrs.',
+  MS = 'Ms.',
+  DR = 'Dr.',
+  PROF = 'Prof.',
+  REV = 'Rev.',
+  HON = 'Hon.',
+  ENG = 'Eng.',
 }
 
 // Delegate Schema
@@ -36,6 +49,9 @@ export enum DelegateType {
   collection: 'delegates',
 })
 export class Delegate {
+  @Prop({ type: String, enum: Title, required: true })
+  title: Title;
+
   @Prop({ required: true, trim: true })
   firstName: string;
 
@@ -87,7 +103,6 @@ export class Delegate {
   @Prop({
     type: Number,
     required: true,
-    index: true,
     comment:
       'The year of the event this delegate registration pertains to. Should be derived from the associated event.',
   })

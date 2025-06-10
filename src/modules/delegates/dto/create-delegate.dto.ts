@@ -19,6 +19,7 @@ import {
   DelegateType,
   AttendanceMode,
   IdentificationType,
+  Title,
 } from '../delegates.schema';
 
 // Nested DTOs
@@ -56,10 +57,6 @@ export class IdentificationDto {
   @IsNotEmpty()
   issuingCountry: string;
 
-  @ApiPropertyOptional({
-    description: 'URL to uploaded document file',
-    example: 'https://storage.example.com/documents/passport_123.pdf',
-  })
   @IsOptional()
   @IsUrl()
   documentUrl?: string;
@@ -88,6 +85,8 @@ export class AddressDto {
   })
   @IsString()
   @IsNotEmpty()
+  state: string;
+
   @ApiProperty({
     description: 'Country',
     example: 'Kenya',
@@ -212,6 +211,15 @@ export class SocialMediaDto {
 // Main Create Delegate DTO
 export class CreateDelegateDto {
   @ApiProperty({
+    enum: Title,
+    description: 'Title of the delegate',
+    example: Title.MR,
+  })
+  @IsEnum(Title)
+  @IsNotEmpty()
+  title: Title;
+
+  @ApiProperty({
     description: 'Delegate first name',
     example: 'John',
   })
@@ -278,7 +286,7 @@ export class CreateDelegateDto {
   @ApiProperty({
     enum: DelegateType,
     description: 'Type of delegate',
-    example: DelegateType.SHAREHOLDER,
+    example: DelegateType.GUEST,
   })
   @IsEnum(DelegateType)
   @IsNotEmpty()
@@ -302,10 +310,6 @@ export class CreateDelegateDto {
   @IsNotEmpty()
   identification: IdentificationDto;
 
-  @ApiPropertyOptional({
-    description: 'Profile picture URL',
-    example: 'https://storage.example.com/profiles/john_doe.jpg',
-  })
   @IsOptional()
   @IsUrl()
   profilePicture?: string;

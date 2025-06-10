@@ -15,7 +15,11 @@ import {
   Logger,
   Header,
   Res,
+  UseInterceptors,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -29,6 +33,7 @@ import {
   ApiCreatedResponse,
   ApiOkResponse,
   ApiResponse,
+  ApiConsumes,
 } from '@nestjs/swagger';
 import { DelegatesService } from './delegate.service';
 import { BadgeService } from '../badge/badge.service';
@@ -41,7 +46,12 @@ import {
   RejectDelegateDto,
   CheckInDelegateDto,
 } from './dto/admin-delegate.dto';
-import { Delegate } from './delegates.schema';
+import {
+  AttendanceMode,
+  Delegate,
+  DelegateType,
+  IdentificationType,
+} from './delegates.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
@@ -53,6 +63,7 @@ import {
   ConfirmPasswordResetDto,
   RequestPasswordResetDto,
 } from '../auth/dto/reset-password.dto';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @ApiTags('Delegates')
 @ApiBearerAuth()
@@ -62,15 +73,225 @@ export class DelegatesController {
   constructor(
     private readonly delegatesService: DelegatesService,
     private readonly badgeService: BadgeService,
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @Public()
+  @UseInterceptors(
+    FileFieldsInterceptor(
+      [
+        { name: 'profilePicture', maxCount: 1 },
+        { name: 'document', maxCount: 1 },
+      ],
+      {
+        limits: {
+          fileSize: 5 * 1024 * 1024, // 5MB limit
+        },
+        fileFilter: (req, file, cb) => {
+          if (
+            file.fieldname === 'profilePicture' &&
+            !file.originalname.match(/\.(jpg|jpeg|png|gif)$/)
+          ) {
+            return cb(
+              new BadRequestException(
+                'Only image files are allowed for profile picture',
+              ),
+              false,
+            );
+          }
+          if (
+            file.fieldname === 'document' &&
+            !file.originalname.match(/\.(pdf|doc|docx)$/i)
+          ) {
+            return cb(
+              new BadRequestException(
+                'Only PDF, DOC, DOCX files are allowed for documents',
+              ),
+              false,
+            );
+          }
+          cb(null, true);
+        },
+      },
+    ),
+  )
   @ApiOperation({
-    summary: 'Create a new delegate',
-    description:
-      'Creates a new delegate with comprehensive validation and error handling',
+    summary: 'Create a new delegate with file uploads',
+    description: `Creates a new delegate with file uploads support. All fields are required unless marked optional.`,
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Multipart form data for creating a delegate.',
+    schema: {
+      type: 'object',
+      required: [
+        'title',
+        'firstName',
+        'lastName',
+        'email',
+        'eventYear',
+        'phoneNumber',
+        'nationality',
+        'delegateType',
+        'attendanceMode',
+        'identification',
+        'languagesSpoken',
+        'eventId',
+        'address',
+        'emergencyContact',
+        'password',
+      ],
+      properties: {
+        profilePicture: {
+          type: 'string',
+          format: 'binary',
+          description: 'Profile picture file (JPEG, PNG, max 5MB)',
+        },
+        document: {
+          type: 'string',
+          format: 'binary',
+          description: 'Identification document file (PDF, DOCX, max 5MB)',
+        },
+        title: { type: 'string', example: 'dr' },
+        firstName: { type: 'string', example: 'John' },
+        lastName: { type: 'string', example: 'Doe' },
+        email: {
+          type: 'string',
+          format: 'email',
+          example: 'john.doe@example.com',
+        },
+        eventYear: { type: 'number', example: 2025 },
+        phoneNumber: { type: 'string', example: '+254712345678' },
+        nationality: { type: 'string', example: 'Kenyan' },
+        organization: { type: 'string', example: 'Kenya Commercial Bank' },
+        position: { type: 'string', example: 'Chief Executive Officer' },
+        delegateType: {
+          type: 'string',
+          enum: Object.values(DelegateType),
+          example: DelegateType.GUEST,
+        },
+        attendanceMode: {
+          type: 'string',
+          enum: Object.values(AttendanceMode),
+          example: AttendanceMode.PHYSICAL,
+        },
+        identification: {
+          type: 'object',
+          required: ['type', 'number', 'issuingCountry'],
+          properties: {
+            type: {
+              type: 'string',
+              enum: Object.values(IdentificationType),
+              example: IdentificationType.PASSPORT,
+            },
+            number: { type: 'string', example: 'A1234567' },
+            expiryDate: {
+              type: 'string',
+              format: 'date-time',
+              example: '2030-12-31T00:00:00.000Z',
+            },
+            issuingCountry: { type: 'string', example: 'Kenya' },
+          },
+        },
+        languagesSpoken: {
+          type: 'array',
+          items: { type: 'string' },
+          example: ['English', 'Swahili'],
+        },
+        preferredLanguage: { type: 'string', example: 'English' },
+        eventId: { type: 'string', example: '60d5ecb74f4d2c001f5e4b2a' },
+        address: {
+          type: 'object',
+          required: ['street', 'city', 'state', 'country', 'postalCode'],
+          properties: {
+            street: { type: 'string', example: '123 Uhuru Highway' },
+            city: { type: 'string', example: 'Nairobi' },
+            state: { type: 'string', example: 'Nairobi County' },
+            country: { type: 'string', example: 'Kenya' },
+            postalCode: { type: 'string', example: '00100' },
+          },
+        },
+        emergencyContact: {
+          type: 'object',
+          required: ['name', 'relationship', 'phoneNumber'],
+          properties: {
+            name: { type: 'string', example: 'Jane Doe Smith' },
+            relationship: { type: 'string', example: 'Spouse' },
+            phoneNumber: { type: 'string', example: '+254712345678' },
+            email: {
+              type: 'string',
+              format: 'email',
+              example: 'jane.doe@example.com',
+            },
+          },
+        },
+        hasAccommodation: { type: 'boolean', default: false },
+        accommodationDetails: {
+          type: 'object',
+          properties: {
+            hotelName: { type: 'string', example: 'Nairobi Serena Hotel' },
+            checkIn: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-06-15T14:00:00.000Z',
+            },
+            checkOut: {
+              type: 'string',
+              format: 'date-time',
+              example: '2025-06-18T11:00:00.000Z',
+            },
+            roomPreference: {
+              type: 'string',
+              example: 'Non-smoking, single bed',
+            },
+          },
+        },
+        requiresVisa: { type: 'boolean', default: false },
+        visaStatus: { type: 'string', example: 'Approved' },
+        arrivalDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-06-15T10:00:00.000Z',
+        },
+        departureDate: {
+          type: 'string',
+          format: 'date-time',
+          example: '2025-06-18T15:00:00.000Z',
+        },
+        flightDetails: {
+          type: 'object',
+          properties: {
+            arrivalFlight: { type: 'string', example: 'KQ101' },
+            departureFlight: { type: 'string', example: 'KQ102' },
+          },
+        },
+        socialMedia: {
+          type: 'object',
+          properties: {
+            linkedin: {
+              type: 'string',
+              format: 'uri',
+              example: 'https://linkedin.com/in/johndoe',
+            },
+            twitter: {
+              type: 'string',
+              format: 'uri',
+              example: 'https://twitter.com/johndoe',
+            },
+          },
+        },
+        bio: { type: 'string', example: 'Experienced banking executive...' },
+        consentToPhotography: { type: 'boolean', default: true },
+        consentToDataProcessing: { type: 'boolean', default: true },
+        password: {
+          type: 'string',
+          format: 'password',
+          example: 'h$shedP@sswOrd',
+        },
+      },
+    },
   })
   @ApiCreatedResponse({
     description: 'Delegate successfully created',
@@ -78,51 +299,70 @@ export class DelegatesController {
   })
   @ApiBadRequestResponse({
     description: 'Invalid input data or validation errors',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: {
-          type: 'string',
-          example: 'Validation failed: email must be a valid email address',
-        },
-        error: { type: 'string', example: 'Bad Request' },
-      },
-    },
   })
   @ApiConflictResponse({
     description: 'Delegate with the same email already exists!',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 409 },
-        message: {
-          type: 'string',
-          example:
-            'Delegate with email john.doe@example.com and event year 2025 already exists',
-        },
-        error: { type: 'string', example: 'Conflict' },
-      },
-    },
   })
-  @ApiInternalServerErrorResponse({
-    description: 'Internal server error',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 500 },
-        message: { type: 'string', example: 'Failed to create delegate' },
-        error: { type: 'string', example: 'Internal Server Error' },
-      },
-    },
-  })
-  @ApiBody({ type: CreateDelegateDto })
+  @ApiInternalServerErrorResponse({ description: 'Internal server error' })
   async create(
     @Body() createDelegateDto: CreateDelegateDto,
+    @UploadedFiles()
+    files: {
+      profilePicture?: Express.Multer.File[];
+      document?: Express.Multer.File[];
+    },
   ): Promise<Delegate> {
     this.logger.log(
       `POST /delegates - Creating delegate: ${createDelegateDto.email}`,
     );
+
+    // Manually parse nested JSON string fields from multipart/form-data
+    const fieldsToParse = [
+      'identification',
+      'address',
+      'emergencyContact',
+      'accommodationDetails',
+      'flightDetails',
+      'socialMedia',
+    ];
+
+    for (const field of fieldsToParse) {
+      if (
+        createDelegateDto[field] &&
+        typeof createDelegateDto[field] === 'string'
+      ) {
+        try {
+          createDelegateDto[field] = JSON.parse(
+            createDelegateDto[field] as string,
+          );
+        } catch {
+          throw new BadRequestException(`Invalid JSON format for ${field}.`);
+        }
+      }
+    }
+
+    if (files?.profilePicture?.[0]) {
+      const result = await this.cloudinaryService.uploadFile(
+        files.profilePicture[0],
+        'delegates/profile-pictures',
+      );
+      createDelegateDto.profilePicture = result.secure_url;
+    }
+
+    if (files?.document?.[0]) {
+      const result = await this.cloudinaryService.uploadFile(
+        files.document[0],
+        'delegates/documents',
+      );
+      // Ensure identification object exists with required fields
+      if (!createDelegateDto.identification) {
+        throw new BadRequestException(
+          'Identification details are required when uploading a document',
+        );
+      }
+      createDelegateDto.identification.documentUrl = result.secure_url;
+    }
+
     return await this.delegatesService.create(createDelegateDto);
   }
 

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { BadgeModule } from '../badge/badge.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -8,20 +8,15 @@ import {
   SystemLog,
   SystemLogSchema,
 } from '../system-logs/schemas/system-log.schema';
-import { NotificationsModule } from '../notifications/notifications.module';
-import { Delegate, DelegateSchema } from './delegates.schema';
-import { DelegatesService } from './delegate.service';
-import { DelegatesController } from './delegate.controller';
+import { EventsService } from './event.service';
+import { EventsController } from './event.controller';
 import { PassportModule } from '@nestjs/passport';
-import { QueuesModule } from '../queues/queues.module';
-import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { EventSchema } from './events.schema';
 
 @Module({
   imports: [
     CloudinaryModule,
-    MongooseModule.forFeature([
-      { name: Delegate.name, schema: DelegateSchema },
-    ]),
+    MongooseModule.forFeature([{ name: Event.name, schema: EventSchema }]),
     MongooseModule.forFeature([
       { name: SystemLog.name, schema: SystemLogSchema },
     ]),
@@ -36,11 +31,8 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
         },
       }),
     }),
-    NotificationsModule,
-    BadgeModule,
-    QueuesModule,
   ],
-  controllers: [DelegatesController],
-  providers: [SystemLogsService, DelegatesService],
+  controllers: [EventsController],
+  providers: [SystemLogsService, EventsService],
 })
-export class DelegatesModule {}
+export class EventsModule {}

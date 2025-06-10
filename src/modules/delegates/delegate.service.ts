@@ -215,6 +215,19 @@ export class DelegatesService {
 
     const updatedDelegate = await delegate.save();
 
+    // --- Notifications ---
+    const emailSubject = 'Welcome! You are Checked In';
+    const emailBody =
+      this.createCheckInConfirmationEmailTemplate(updatedDelegate);
+    this.notificationService
+      .sendEmail(updatedDelegate.email, emailSubject, emailBody)
+      .catch((err) => {
+        this.logger.error(
+          `Failed to send check-in email to ${updatedDelegate.email}: ${err.message}`,
+          err.stack,
+        );
+      });
+
     this.logger.log(
       `Delegate ${delegateId} has been checked in by staff ${checkedInBy}`,
     );
@@ -232,7 +245,7 @@ export class DelegatesService {
   }
 
   private createApprovalEmailTemplate(delegate: DelegateDocument): string {
-    const delegateName = `${delegate.firstName} ${delegate.lastName}`;
+    const delegateName = `${delegate.title} ${delegate.firstName} ${delegate.lastName}`;
     return `
       <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.8; color: #333; max-width: 680px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
         <div style="background: linear-gradient(135deg, #004a99 0%, #002b5a 100%); color: white; padding: 30px; text-align: center;">
@@ -265,6 +278,52 @@ export class DelegatesService {
     `;
   }
 
+  private createCheckInConfirmationEmailTemplate(
+    delegate: DelegateDocument,
+  ): string {
+    const delegateName = `${delegate.title} ${delegate.firstName} ${delegate.lastName}`;
+    return `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.8; color: #333; max-width: 680px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #28a745 0%, #218838 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Welcome to the Event!</h1>
+        </div>
+        <div style="padding: 30px;">
+          <p style="font-size: 18px;">Dear ${delegateName},</p>
+          <p style="font-size: 16px;">This email confirms that you have been successfully checked in at <strong>${delegate.checkInLocation}</strong>. We are thrilled to have you with us!</p>
+          <p style="font-size: 16px;">We hope you have an inspiring and productive time at the event. If you need any assistance, please do not hesitate to contact our staff.</p>
+          <p style="font-size: 16px; margin-top: 30px;">Enjoy the event!</p>
+          <p style="font-size: 16px; margin-top: 30px;">Best regards,<br><strong>The Event Team</strong></p>
+        </div>
+        <div style="background-color: #f8f9fa; color: #888; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #e0e0e0;">
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    `;
+  }
+
+  private createRegistrationReceivedEmailTemplate(
+    delegate: DelegateDocument,
+  ): string {
+    const delegateName = `${delegate.title} ${delegate.firstName} ${delegate.lastName}`;
+    return `
+      <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.8; color: #333; max-width: 680px; margin: 20px auto; border: 1px solid #e0e0e0; border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+        <div style="background: linear-gradient(135deg, #007bff 0%, #0056b3 100%); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Registration Received</h1>
+        </div>
+        <div style="padding: 30px;">
+          <p style="font-size: 18px;">Dear ${delegateName},</p>
+          <p style="font-size: 16px;">Thank you for registering for the upcoming event. We have successfully received your information, and it is now under review by our team.</p>
+          <p style="font-size: 16px;">You will receive another email notification once your registration has been approved. Please keep an eye on your inbox.</p>
+          <p style="font-size: 16px; margin-top: 30px;">We appreciate your patience.</p>
+          <p style="font-size: 16px; margin-top: 30px;">Best regards,<br><strong>The Event Team</strong></p>
+        </div>
+        <div style="background-color: #f8f9fa; color: #888; padding: 15px; text-align: center; font-size: 12px; border-top: 1px solid #e0e0e0;">
+          <p>This is an automated message. Please do not reply directly to this email.</p>
+        </div>
+      </div>
+    `;
+  }
+
   async create(createDelegateDto: CreateDelegateDto): Promise<Delegate> {
     try {
       this.logger.log(`Creating delegate: ${createDelegateDto.email}`);
@@ -288,17 +347,24 @@ export class DelegatesService {
         throw new BadRequestException('Invalid event ID format');
       }
 
+      // Hash the password before saving
+      const salt = await bcrypt.genSalt();
+      const hashedPassword = await bcrypt.hash(createDelegateDto.password, salt);
+
       // Create the delegate
-      const createdDelegate = new this.delegateModel(createDelegateDto);
+      const createdDelegate = new this.delegateModel({
+        ...createDelegateDto,
+        password: hashedPassword,
+      });
       const savedDelegate = await createdDelegate.save();
 
       // --- Send Registration Confirmation Email ---
-      const delegateName = `${savedDelegate.firstName} ${savedDelegate.lastName}`;
       const emailSubject = 'Shelter Afrique - Registration Confirmation';
-      const emailMessage = `Dear ${delegateName},\n\nThank you for registering for the upcoming event. Your registration has been received and is currently under review by our team.\n\nYou will receive another notification once your application has been approved.\n\nBest regards,\nThe Shelter Afrique Team`;
+      const emailBody =
+        this.createRegistrationReceivedEmailTemplate(savedDelegate);
 
       this.notificationService
-        .sendEmail(savedDelegate.email, emailSubject, emailMessage)
+        .sendEmail(savedDelegate.email, emailSubject, emailBody)
         .then(() => {
           this.logger.log(
             `Sent registration confirmation email to: ${savedDelegate.email}`,
@@ -314,7 +380,7 @@ export class DelegatesService {
 
       // --- Schedule Push Notification via BullMQ ---
       const pushTitle = 'Registration Under Review';
-      const pushBody = `Hi ${delegateName}, thank you for registering. We are currently reviewing your details and will notify you upon approval.`;
+      const pushBody = `Hi ${savedDelegate.title} ${savedDelegate.firstName} ${savedDelegate.lastName}, thank you for registering. We are currently reviewing your details and will notify you upon approval.`;
       const jobData = {
         delegateId: savedDelegate._id.toString(),
         title: pushTitle,
@@ -886,7 +952,11 @@ export class DelegatesService {
         throw new BadRequestException('Shaf: Invalid password reset PIN.');
       }
 
-      user.password = confirmPasswordResetDto.newPassword;
+      const salt = await bcrypt.genSalt();
+      user.password = await bcrypt.hash(
+        confirmPasswordResetDto.newPassword,
+        salt,
+      );
       user.resetPasswordPin = undefined;
       user.resetPasswordExpires = undefined;
       await (user as DelegateDocument).save();

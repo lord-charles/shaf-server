@@ -7,8 +7,13 @@ import { SystemLogsModule } from './modules/system-logs/system-logs.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { DelegatesModule } from './modules/delegates/delegate.module';
 import { QueuesModule } from './modules/queues/queues.module';
+import { ConfigModule } from '@nestjs/config';
+import { EventsModule } from './modules/events/event.module';
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     AuthModule,
     DatabaseModule,
@@ -16,6 +21,7 @@ import { QueuesModule } from './modules/queues/queues.module';
     NotificationsModule,
     DelegatesModule,
     QueuesModule,
+    EventsModule,
   ],
   controllers: [],
   providers: [],

@@ -21,6 +21,9 @@ export enum EventStatus {
   collection: 'events',
 })
 export class Event {
+  @Prop({ required: true })
+  eventYear: number;
+
   @Prop({ required: true, trim: true })
   title: string;
 
