@@ -276,6 +276,7 @@ export class DelegatesController {
   }
 
   @Get(':id/badge')
+  @Public()
   @ApiOperation({ summary: 'Download a delegate badge' })
   @ApiParam({ name: 'id', description: 'Delegate ID' })
   @Header('Content-Type', 'image/png')

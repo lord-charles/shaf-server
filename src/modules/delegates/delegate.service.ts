@@ -188,7 +188,6 @@ export class DelegatesService {
     );
     return updatedDelegate.toObject();
   }
-
   async checkIn(
     delegateId: string,
     checkInDto: CheckInDelegateDto,
@@ -223,7 +222,9 @@ export class DelegatesService {
   }
 
   async findOneDocument(id: string): Promise<DelegateDocument> {
-    const delegate = await this.delegateModel.findById(new Types.ObjectId(id)).exec();
+    const delegate = await this.delegateModel
+      .findById(new Types.ObjectId(id))
+      .exec();
     if (!delegate) {
       throw new NotFoundException(`Delegate document with ID ${id} not found`);
     }
