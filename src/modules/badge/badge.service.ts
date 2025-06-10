@@ -107,15 +107,23 @@ export class BadgeService {
     ctx.fillStyle = gradient;
     this.roundRect(ctx, 0, 0, width, height * 0.22, 0).fill(); // Header height is 22% of total height
 
-    // Draw "SHELTER AFRIQUE" Logo Placeholder & Text
-    // A real logo image would be loaded here. For now, we create a placeholder.
-    ctx.fillStyle = 'white';
+    // Draw SHAF logo in a circular badge
     ctx.beginPath();
     ctx.arc(90, 70, 40, 0, 2 * Math.PI);
+    ctx.fillStyle = 'white';
     ctx.fill();
     ctx.strokeStyle = '#26A69A';
     ctx.lineWidth = 5;
     ctx.stroke();
+    
+    // Add SHAF text in the circle
+    ctx.fillStyle = '#26A69A';
+    ctx.font = `bold 36px ${fontFamily}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('SHAF', 90, 70);
+    ctx.textBaseline = 'alphabetic'; // Reset baseline
+    ctx.textAlign = 'left'; // Reset alignment
 
     ctx.fillStyle = 'white';
     ctx.font = `bold 42px ${fontFamily}`;
