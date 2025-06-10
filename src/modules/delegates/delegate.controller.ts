@@ -51,6 +51,7 @@ import {
   Delegate,
   DelegateType,
   IdentificationType,
+  Title,
 } from './delegates.schema';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
@@ -154,7 +155,7 @@ export class DelegatesController {
           format: 'binary',
           description: 'Identification document file (PDF, DOCX, max 5MB)',
         },
-        title: { type: 'string', example: 'dr' },
+        title: { type: 'string', example: Title.DR },
         firstName: { type: 'string', example: 'John' },
         lastName: { type: 'string', example: 'Doe' },
         email: {
