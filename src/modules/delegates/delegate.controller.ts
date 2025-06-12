@@ -53,7 +53,6 @@ import {
   IdentificationType,
   Title,
 } from './delegates.schema';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { UseGuards } from '@nestjs/common';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { Public } from '../auth/decorators/public.decorator';
@@ -67,6 +66,7 @@ import {
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RegisterPushTokenDto } from '../auth/dto/register-push-token.dto';
 import { NotificationService } from '../notifications/services/notification.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @ApiTags('Delegates')
 @ApiBearerAuth()
@@ -621,7 +621,7 @@ export class DelegatesController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @ApiOperation({
     summary: 'Get delegate by ID',
     description: 'Retrieves a specific delegate by their unique ID',
@@ -650,7 +650,7 @@ export class DelegatesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @ApiOperation({
     summary: 'Update delegate',
     description: 'Updates an existing delegate with partial data',
@@ -808,8 +808,8 @@ export class DelegatesController {
     );
   }
 
-  @Post('/delegate/me/push-token')
-  @UseGuards(JwtAuthGuard)
+  @Post('/delegate/:id/push-token')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Register Expo push token for the authenticated user',
@@ -829,15 +829,11 @@ export class DelegatesController {
     description: 'Unauthorized.',
   })
   async registerPushToken(
-    @Req() req: any,
+    @Param('id') id: string,
     @Body() registerPushTokenDto: RegisterPushTokenDto,
   ) {
-    const userId = req.user.id;
-    if (!userId) {
-      throw new Error('User ID not found in token');
-    }
     const result = await this.notificationService.saveUserPushToken(
-      userId,
+      id,
       registerPushTokenDto.token,
     );
     if (!result) {

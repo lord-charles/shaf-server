@@ -349,7 +349,10 @@ export class DelegatesService {
 
       // Hash the password before saving
       const salt = await bcrypt.genSalt();
-      const hashedPassword = await bcrypt.hash(createDelegateDto.password, salt);
+      const hashedPassword = await bcrypt.hash(
+        createDelegateDto.password,
+        salt,
+      );
 
       // Create the delegate
       const createdDelegate = new this.delegateModel({
@@ -1001,6 +1004,14 @@ export class DelegatesService {
       token,
       expiresIn: 365 * 24 * 60 * 60,
     };
+  }
+
+  async findById(id: string): Promise<Delegate | null> {
+    const user = await this.delegateModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException('delegate not found');
+    }
+    return user;
   }
 
   // Remove sensitive information from user object

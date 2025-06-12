@@ -15,6 +15,9 @@ import { DelegatesController } from './delegate.controller';
 import { PassportModule } from '@nestjs/passport';
 import { QueuesModule } from '../queues/queues.module';
 import { CloudinaryModule } from '../cloudinary/cloudinary.module';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Module({
   imports: [
@@ -41,6 +44,18 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
     QueuesModule,
   ],
   controllers: [DelegatesController],
-  providers: [SystemLogsService, DelegatesService],
+  providers: [
+    SystemLogsService,
+    DelegatesService,
+    JwtStrategy,
+    {
+      provide: 'APP_GUARD',
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: 'APP_GUARD',
+      useClass: RolesGuard,
+    },
+  ],
 })
 export class DelegatesModule {}
