@@ -80,14 +80,14 @@ export class AuthService {
 
       if (!user) {
         await this.systemLogsService.createLog(
-          'Ofgen Login Failed',
+          'ShafDb Login Failed',
           `User not found with email: ${loginUserDto.email}`,
           LogSeverity.WARNING,
           undefined,
           req,
         );
         throw new UnauthorizedException(
-          'Ofgen: Invalid credentials or user not found.',
+          'ShafDb: Invalid credentials or user not found.',
         );
       }
 
@@ -104,13 +104,15 @@ export class AuthService {
 
       if (!user.password) {
         await this.systemLogsService.createLog(
-          'Ofgen Login Error',
+          'ShafDb Login Error',
           `Password field not loaded for user: ${user.email}`,
           LogSeverity.ERROR,
           user.employeeId?.toString(),
           req,
         );
-        throw new UnauthorizedException('Ofgen: Authentication process error.');
+        throw new UnauthorizedException(
+          'ShafDb: Authentication process error.',
+        );
       }
       const isValidPassword = await bcrypt.compare(
         loginUserDto.password,
@@ -118,20 +120,20 @@ export class AuthService {
       );
       if (!isValidPassword) {
         await this.systemLogsService.createLog(
-          'Ofgen Invalid Password',
+          'ShafDb Invalid Password',
           `Invalid password for user: ${user.firstName} ${user.lastName} (${user.email})`,
           LogSeverity.WARNING,
           user.employeeId?.toString(),
           req,
         );
-        throw new UnauthorizedException('Ofgen: Invalid credentials.');
+        throw new UnauthorizedException('ShafDb: Invalid credentials.');
       }
 
       const token = await this.generateToken(user);
 
       await this.systemLogsService.createLog(
-        'Ofgen User Login',
-        `User ${user.firstName} ${user.lastName} (${user.email}) logged in successfully for Ofgen.`,
+        'ShafDb User Login',
+        `User ${user.firstName} ${user.lastName} (${user.email}) logged in successfully for ShafDb.`,
         LogSeverity.INFO,
         user.employeeId?.toString(),
         req,
@@ -165,7 +167,7 @@ export class AuthService {
       );
       if (!user) {
         await this.systemLogsService.createLog(
-          'Ofgen Password Reset Request Failed',
+          'ShafDb Password Reset Request Failed',
           `Password reset attempt for non-existent email: ${requestPasswordResetDto.email}`,
           LogSeverity.WARNING,
           undefined,
@@ -173,7 +175,7 @@ export class AuthService {
         );
         return {
           message:
-            'Ofgen: If your email is registered, you will receive a password reset PIN.',
+            'ShafDb: If your email is registered, you will receive a password reset PIN.',
         };
       }
 
@@ -184,7 +186,7 @@ export class AuthService {
       user.resetPasswordExpires = expiryDate;
       await (user as UserDocument).save();
 
-      const resetMessage = `Your Ofgen password reset PIN is: ${resetPin}. This PIN will expire in 10 minutes. Please keep this PIN secure and do not share it with anyone.`;
+      const resetMessage = `Your ShafDb password reset PIN is: ${resetPin}. This PIN will expire in 10 minutes. Please keep this PIN secure and do not share it with anyone.`;
       await this.notificationService.sendRegistrationPassword(
         user.phoneNumber,
         user.email,
@@ -192,7 +194,7 @@ export class AuthService {
       );
 
       await this.systemLogsService.createLog(
-        'Ofgen Password Reset Requested',
+        'ShafDb Password Reset Requested',
         `Password reset PIN generated for user: ${user.firstName} ${user.lastName} (${user.email})`,
         LogSeverity.INFO,
         user.employeeId?.toString(),
@@ -201,18 +203,18 @@ export class AuthService {
 
       return {
         message:
-          'Ofgen: If your email is registered, you will receive a password reset PIN.',
+          'ShafDb: If your email is registered, you will receive a password reset PIN.',
       };
     } catch (error) {
       await this.systemLogsService.createLog(
-        'Ofgen Password Reset Request Error',
+        'ShafDb Password Reset Request Error',
         `Error during password reset request for ${requestPasswordResetDto.email}: ${error.message}`,
         LogSeverity.ERROR,
         undefined,
         req,
       );
       throw new BadRequestException(
-        'Ofgen: Could not process password reset request. Please try again later.',
+        'ShafDb: Could not process password reset request. Please try again later.',
       );
     }
   }
@@ -229,23 +231,25 @@ export class AuthService {
 
       if (!user || !user.resetPasswordPin || !user.resetPasswordExpires) {
         throw new BadRequestException(
-          'Ofgen: Invalid or expired password reset PIN.',
+          'ShafDb: Invalid or expired password reset PIN.',
         );
       }
 
       if (user.resetPasswordExpires < new Date()) {
         await this.systemLogsService.createLog(
-          'Ofgen Password Reset PIN Expired',
+          'ShafDb Password Reset PIN Expired',
           `Expired PIN used for ${user.email}`,
           LogSeverity.WARNING,
           user.employeeId?.toString(),
           req,
         );
-        throw new BadRequestException('Ofgen: Password reset PIN has expired.');
+        throw new BadRequestException(
+          'ShafDb: Password reset PIN has expired.',
+        );
       }
 
       if (user.resetPasswordPin !== confirmPasswordResetDto.resetToken) {
-        throw new BadRequestException('Ofgen: Invalid password reset PIN.');
+        throw new BadRequestException('ShafDb: Invalid password reset PIN.');
       }
 
       user.password = confirmPasswordResetDto.newPassword;
@@ -254,17 +258,17 @@ export class AuthService {
       await (user as UserDocument).save();
 
       await this.systemLogsService.createLog(
-        'Ofgen Password Reset Confirmed',
+        'ShafDb Password Reset Confirmed',
         `Password successfully reset for user: ${user.firstName} ${user.lastName} (${user.email})`,
         LogSeverity.INFO,
         user.employeeId?.toString(),
         req,
       );
 
-      return { message: 'Ofgen: Your password has been successfully reset.' };
+      return { message: 'ShafDb: Your password has been successfully reset.' };
     } catch (error) {
       await this.systemLogsService.createLog(
-        'Ofgen Password Reset Confirmation Failed',
+        'ShafDb Password Reset Confirmation Failed',
         `Error confirming password reset for ${confirmPasswordResetDto.email}: ${error.message}`,
         LogSeverity.ERROR,
         undefined,
@@ -272,7 +276,7 @@ export class AuthService {
       );
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
-        'Ofgen: Could not reset password. Please try again.',
+        'ShafDb: Could not reset password. Please try again.',
       );
     }
   }
@@ -317,7 +321,7 @@ export class AuthService {
   async getUserProfile(userId: string): Promise<Partial<User>> {
     const user = await this.userService.findById(userId);
     if (!user) {
-      throw new UnauthorizedException('Ofgen: User not found');
+      throw new UnauthorizedException('ShafDb: User not found');
     }
     return this.sanitizeUser(user);
   }

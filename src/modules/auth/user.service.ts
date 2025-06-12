@@ -7,7 +7,11 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CreateUserDto, UpdateUserDto, UpdatePasswordDto } from './dto/user.dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  UpdatePasswordDto,
+} from './dto/user.dto';
 import { LoginUserDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
@@ -26,7 +30,7 @@ export class UserService {
     private readonly jwtService: JwtService,
     private readonly notificationService: NotificationService,
     private readonly systemLogsService: SystemLogsService,
-  ) { }
+  ) {}
 
   async register(createUserDto: CreateUserDto): Promise<User> {
     const existingUser = await this.userModel.findOne({
@@ -58,9 +62,15 @@ export class UserService {
   async login(
     loginUserDto: LoginUserDto,
   ): Promise<{ token: string; user: User }> {
-    const user = await this.userModel.findOne({ email: loginUserDto.email }).select('+password');
+    const user = await this.userModel
+      .findOne({ email: loginUserDto.email })
+      .select('+password');
 
-    if (!user || !user.password || !(await bcrypt.compare(loginUserDto.password, user.password))) {
+    if (
+      !user ||
+      !user.password ||
+      !(await bcrypt.compare(loginUserDto.password, user.password))
+    ) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
@@ -71,13 +81,19 @@ export class UserService {
   async findAll(filterDto: UserFilterDto): Promise<{ users: User[] }> {
     const { status, page = 1, limit = 10 } = filterDto;
     const query = this.userModel.find();
-    const users = await query.skip((page - 1) * limit).limit(limit).exec();
+    const users = await query
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .exec();
     return { users };
   }
 
   async basicInfo(): Promise<{ users: User[] }> {
     try {
-      const users = await this.userModel.find().select('firstName lastName email phoneNumber nationalId').exec();
+      const users = await this.userModel
+        .find()
+        .select('firstName lastName email phoneNumber nationalId')
+        .exec();
       return { users };
     } catch (error) {
       throw new InternalServerErrorException('Failed to retrieve users');
@@ -91,14 +107,17 @@ export class UserService {
     return user;
   }
 
-  async findByEmail(email: string, selectSensitive: boolean = false): Promise<UserDocument | null> {
+  async findByEmail(
+    email: string,
+    selectSensitive: boolean = false,
+  ): Promise<UserDocument | null> {
     let query = this.userModel.findOne({ email });
     if (selectSensitive) {
       query = query.select('+password +resetPasswordPin +resetPasswordExpires');
     }
     const user = await query.exec();
     if (!user) {
-      throw new NotFoundException(`Ofgen: User with email ${email} not found`);
+      throw new NotFoundException(`ShafDb: User with email ${email} not found`);
     }
     return user;
   }
@@ -143,13 +162,19 @@ export class UserService {
     updatePasswordDto: UpdatePasswordDto,
     req?: Request,
   ): Promise<{ message: string }> {
-    const user = await this.userModel.findById(updatePasswordDto.userId).select('+password');
+    const user = await this.userModel
+      .findById(updatePasswordDto.userId)
+      .select('+password');
 
-    if (!user || !user.password || !(await bcrypt.compare(updatePasswordDto.currentPassword, user.password))) {
+    if (
+      !user ||
+      !user.password ||
+      !(await bcrypt.compare(updatePasswordDto.currentPassword, user.password))
+    ) {
       if (user) {
         await this.systemLogsService.createLog(
           'Password Update Failed',
-          `Failed password update for user ${user.firstName} ${user.lastName} (Ofgen). Invalid current password.`,
+          `Failed password update for user ${user.firstName} ${user.lastName} (ShafDb). Invalid current password.`,
           LogSeverity.WARNING,
           user.employeeId?.toString(),
           req,
@@ -163,19 +188,21 @@ export class UserService {
 
     await this.systemLogsService.createLog(
       'Password Update Successful',
-      `Password updated for user ${user.firstName} ${user.lastName} (Ofgen).`,
+      `Password updated for user ${user.firstName} ${user.lastName} (ShafDb).`,
       LogSeverity.INFO,
       user.employeeId?.toString(),
       req,
     );
 
-    return { message: 'Ofgen: Password updated successfully' };
+    return { message: 'ShafDb: Password updated successfully' };
   }
 
   async findByNationalId(nationalId: string): Promise<User | null> {
     const user = await this.userModel.findOne({ nationalId }).exec();
     if (!user) {
-      throw new NotFoundException(`Ofgen: User with National ID ${nationalId} not found`);
+      throw new NotFoundException(
+        `ShafDb: User with National ID ${nationalId} not found`,
+      );
     }
     return user;
   }
