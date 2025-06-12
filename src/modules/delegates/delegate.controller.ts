@@ -65,6 +65,8 @@ import {
   RequestPasswordResetDto,
 } from '../auth/dto/reset-password.dto';
 import { CloudinaryService } from '../cloudinary/cloudinary.service';
+import { RegisterPushTokenDto } from '../auth/dto/register-push-token.dto';
+import { NotificationService } from '../notifications/services/notification.service';
 
 @ApiTags('Delegates')
 @ApiBearerAuth()
@@ -75,6 +77,7 @@ export class DelegatesController {
     private readonly delegatesService: DelegatesService,
     private readonly badgeService: BadgeService,
     private readonly cloudinaryService: CloudinaryService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   @Post()
@@ -803,5 +806,47 @@ export class DelegatesController {
       confirmPasswordResetDto,
       req,
     );
+  }
+
+  @Post('/delegate/me/push-token')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Register Expo push token for the authenticated user',
+    description:
+      'Saves the Expo push notification token for the currently logged-in user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Push token registered successfully.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid push token provided.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized.',
+  })
+  async registerPushToken(
+    @Req() req: any,
+    @Body() registerPushTokenDto: RegisterPushTokenDto,
+  ) {
+    const userId = req.user.id;
+    if (!userId) {
+      throw new Error('User ID not found in token');
+    }
+    const result = await this.notificationService.saveUserPushToken(
+      userId,
+      registerPushTokenDto.token,
+    );
+    if (!result) {
+      return {
+        success: false,
+        message:
+          'Failed to register push token. Invalid token or user not found.',
+      };
+    }
+    return { success: true, message: 'Push token registered successfully.' };
   }
 }
