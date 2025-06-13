@@ -316,6 +316,7 @@ export class DelegatesController {
       document?: Express.Multer.File[];
     },
   ): Promise<Delegate> {
+    console.log('createDelegateDto', createDelegateDto);
     this.logger.log(
       `POST /delegates - Creating delegate: ${createDelegateDto.email}`,
     );
