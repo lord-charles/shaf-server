@@ -337,7 +337,7 @@ export class DelegatesService {
         .exec();
 
       if (!currentYearEventExists) {
-        throw new NotFoundException(
+        throw new ConflictException(
           `Event for year ${createDelegateDto.eventYear} not found`,
         );
       }
