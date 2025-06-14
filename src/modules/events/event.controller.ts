@@ -39,6 +39,7 @@ import {
 } from './dto/res.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Request as ExpressRequest } from 'express';
+import { Public } from '../auth/decorators/public.decorator';
 
 @ApiTags('Events Management')
 @Controller('events')
@@ -482,6 +483,45 @@ export class EventsController {
     } catch (error) {
       this.logger.error(
         `Failed to fetch event statistics: ${error.message}`,
+        error.stack,
+      );
+      throw error;
+    }
+  }
+
+  @Get('current-year')
+  @Public()
+  @ApiOperation({
+    summary: 'Get current year event',
+    description:
+      'Retrieves detailed information about the current year event including agenda, speakers, and logistics.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Event retrieved successfully',
+    type: EventResponseDto,
+  })
+  @ApiResponse({
+    status: HttpStatus.NOT_FOUND,
+    description: 'Event not found',
+    schema: {
+      example: {
+        statusCode: 404,
+        message: 'Current year event not found',
+        error: 'Not Found',
+      },
+    },
+  })
+  async findCurrentYearEvent(): Promise<Event> {
+    try {
+      this.logger.log(`Fetching current year event`);
+
+      const event = await this.eventsService.findCurrentYearEvent();
+
+      return event;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch current year event: ${error.message}`,
         error.stack,
       );
       throw error;

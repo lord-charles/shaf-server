@@ -1,4 +1,10 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
 import { Event, EventDocument, EventStatus } from './events.schema';
@@ -111,6 +117,26 @@ export class EventsService {
         'Failed to create event due to internal error',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
+    }
+  }
+
+  async findCurrentYearEvent(): Promise<Event> {
+    try {
+      const event = await this.eventModel.findOne({
+        eventYear: new Date().getFullYear(),
+      });
+
+      if (!event) {
+        throw new NotFoundException('Current year event not found');
+      }
+
+      return event;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch current year event: ${error.message}`,
+        error.stack,
+      );
+      throw error;
     }
   }
 
