@@ -41,6 +41,7 @@ import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
 import { NOTIFICATION_QUEUE } from '../queues/constants';
 import * as QRCode from 'qrcode';
+import { Event, EventDocument } from '../events/events.schema';
 
 @Injectable()
 export class DelegatesService {
@@ -49,6 +50,8 @@ export class DelegatesService {
   constructor(
     @InjectModel(Delegate.name)
     private readonly delegateModel: Model<DelegateDocument>,
+    @InjectModel(Event.name)
+    private readonly eventModel: Model<EventDocument>,
     private readonly jwtService: JwtService,
     private readonly systemLogsService: SystemLogsService,
     private readonly notificationService: NotificationService,
@@ -327,7 +330,17 @@ export class DelegatesService {
   async create(createDelegateDto: CreateDelegateDto): Promise<Delegate> {
     try {
       this.logger.log(`Creating delegate: ${createDelegateDto.email}`);
+      const currentYearEventExists = await this.eventModel
+        .findOne({
+          eventYear: createDelegateDto.eventYear,
+        })
+        .exec();
 
+      if (!currentYearEventExists) {
+        throw new NotFoundException(
+          `Event for year ${createDelegateDto.eventYear} not found`,
+        );
+      }
       // Check if delegate with same email already exists
       const existingDelegate = await this.delegateModel
         .findOne({
@@ -789,14 +802,14 @@ export class DelegatesService {
 
       if (!user) {
         await this.systemLogsService.createLog(
-          'Shaf Login Failed',
+          'ShafDb Login Failed',
           `User not found with email: ${loginUserDto.email}`,
           LogSeverity.WARNING,
           undefined,
           req,
         );
         throw new UnauthorizedException(
-          'Shaf: Invalid credentials or user not found.',
+          'ShafDb: Invalid credentials or user not found.',
         );
       }
 
@@ -808,18 +821,22 @@ export class DelegatesService {
           user.phoneNumber.toString(),
           req,
         );
-        throw new UnauthorizedException('Account is not active');
+        throw new UnauthorizedException(
+          'Delegate Account has not been approved!',
+        );
       }
 
       if (!user.password) {
         await this.systemLogsService.createLog(
-          'Shaf Login Error',
+          'ShafDb Login Error',
           `Password field not loaded for user: ${user.email}`,
           LogSeverity.ERROR,
           user.phoneNumber?.toString(),
           req,
         );
-        throw new UnauthorizedException('Shaf: Authentication process error.');
+        throw new UnauthorizedException(
+          'ShafDb: Authentication process error.',
+        );
       }
       const isValidPassword = await bcrypt.compare(
         loginUserDto.password,
@@ -827,20 +844,22 @@ export class DelegatesService {
       );
       if (!isValidPassword) {
         await this.systemLogsService.createLog(
-          'Shaf Invalid Password',
+          'ShafDb Invalid Password',
           `Invalid password for user: ${user.firstName} ${user.lastName} (${user.email})`,
           LogSeverity.WARNING,
           user.phoneNumber?.toString(),
           req,
         );
-        throw new UnauthorizedException('Shaf: Invalid credentials.');
+        throw new UnauthorizedException(
+          'ShafDb: Invalid credentials or Delegate not found.',
+        );
       }
 
       const token = await this.generateToken(user);
 
       await this.systemLogsService.createLog(
-        'Shaf User Login',
-        `User ${user.firstName} ${user.lastName} (${user.email}) logged in successfully for Shaf.`,
+        'ShafDb User Login',
+        `User ${user.firstName} ${user.lastName} (${user.email}) logged in successfully for ShafDb.`,
         LogSeverity.INFO,
         user.phoneNumber?.toString(),
         req,
@@ -874,7 +893,7 @@ export class DelegatesService {
       );
       if (!user) {
         await this.systemLogsService.createLog(
-          'Shaf Password Reset Request Failed',
+          'ShafDb Password Reset Request Failed',
           `Password reset attempt for non-existent email: ${requestPasswordResetDto.email}`,
           LogSeverity.WARNING,
           undefined,
@@ -882,7 +901,7 @@ export class DelegatesService {
         );
         return {
           message:
-            'Shaf: If your email is registered, you will receive a password reset PIN.',
+            'ShafDb: If your email is registered, you will receive a password reset PIN.',
         };
       }
 
@@ -893,14 +912,14 @@ export class DelegatesService {
       user.resetPasswordExpires = expiryDate;
       await (user as DelegateDocument).save();
 
-      const resetMessage = `Your Shaf password reset PIN is: ${resetPin}. This PIN will expire in 10 minutes. Please keep this PIN secure and do not share it with anyone.`;
+      const resetMessage = `Your ShafDb password reset PIN is: ${resetPin}. This PIN will expire in 10 minutes. Please keep this PIN secure and do not share it with anyone.`;
       await this.notificationService.sendRegistrationPassword(
         user.email,
         resetMessage,
       );
 
       await this.systemLogsService.createLog(
-        'Shaf Password Reset Requested',
+        'ShafDb Password Reset Requested',
         `Password reset PIN generated for user: ${user.firstName} ${user.lastName} (${user.email})`,
         LogSeverity.INFO,
         user.phoneNumber?.toString(),
@@ -909,18 +928,18 @@ export class DelegatesService {
 
       return {
         message:
-          'Shaf: If your email is registered, you will receive a password reset PIN.',
+          'ShafDb: If your email is registered, you will receive a password reset PIN.',
       };
     } catch (error) {
       await this.systemLogsService.createLog(
-        'Shaf Password Reset Request Error',
+        'ShafDb Password Reset Request Error',
         `Error during password reset request for ${requestPasswordResetDto.email}: ${error.message}`,
         LogSeverity.ERROR,
         undefined,
         req,
       );
       throw new BadRequestException(
-        'Shaf: Could not process password reset request. Please try again later.',
+        'ShafDb: Could not process password reset request. Please try again later.',
       );
     }
   }
@@ -936,23 +955,25 @@ export class DelegatesService {
 
       if (!user || !user.resetPasswordPin || !user.resetPasswordExpires) {
         throw new BadRequestException(
-          'Shaf: Invalid or expired password reset PIN.',
+          'ShafDb: Invalid or expired password reset PIN.',
         );
       }
 
       if (user.resetPasswordExpires < new Date()) {
         await this.systemLogsService.createLog(
-          'Shaf Password Reset PIN Expired',
+          'ShafDb Password Reset PIN Expired',
           `Expired PIN used for ${user.email}`,
           LogSeverity.WARNING,
           user.phoneNumber?.toString(),
           req,
         );
-        throw new BadRequestException('Shaf: Password reset PIN has expired.');
+        throw new BadRequestException(
+          'ShafDb: Password reset PIN has expired.',
+        );
       }
 
       if (user.resetPasswordPin !== confirmPasswordResetDto.resetToken) {
-        throw new BadRequestException('Shaf: Invalid password reset PIN.');
+        throw new BadRequestException('ShafDb: Invalid password reset PIN.');
       }
 
       const salt = await bcrypt.genSalt();
@@ -965,17 +986,17 @@ export class DelegatesService {
       await (user as DelegateDocument).save();
 
       await this.systemLogsService.createLog(
-        'Shaf Password Reset Confirmed',
+        'ShafDb Password Reset Confirmed',
         `Password successfully reset for user: ${user.firstName} ${user.lastName} (${user.email})`,
         LogSeverity.INFO,
         user.phoneNumber?.toString(),
         req,
       );
 
-      return { message: 'Shaf: Your password has been successfully reset.' };
+      return { message: 'ShafDb: Your password has been successfully reset.' };
     } catch (error) {
       await this.systemLogsService.createLog(
-        'Shaf Password Reset Confirmation Failed',
+        'ShafDb Password Reset Confirmation Failed',
         `Error confirming password reset for ${confirmPasswordResetDto.email}: ${error.message}`,
         LogSeverity.ERROR,
         undefined,
@@ -983,7 +1004,7 @@ export class DelegatesService {
       );
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException(
-        'Shaf: Could not reset password. Please try again.',
+        'ShafDb: Could not reset password. Please try again.',
       );
     }
   }

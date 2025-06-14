@@ -18,6 +18,7 @@ import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
+import { Event, EventSchema } from '../events/events.schema';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
     MongooseModule.forFeature([
       { name: SystemLog.name, schema: SystemLogSchema },
     ]),
+    MongooseModule.forFeature([{ name: Event.name, schema: EventSchema }]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
