@@ -355,11 +355,6 @@ export class DelegatesService {
         );
       }
 
-      // Validate eventId format
-      if (!Types.ObjectId.isValid(createDelegateDto.eventId)) {
-        throw new BadRequestException('Invalid event ID format');
-      }
-
       // Hash the password before saving
       const salt = await bcrypt.genSalt();
       const hashedPassword = await bcrypt.hash(
@@ -609,14 +604,6 @@ export class DelegatesService {
             `Another delegate with email ${updateDelegateDto.email} already exists`,
           );
         }
-      }
-
-      // Validate eventId if provided
-      if (
-        updateDelegateDto.eventId &&
-        !Types.ObjectId.isValid(updateDelegateDto.eventId)
-      ) {
-        throw new BadRequestException('Invalid event ID format');
       }
 
       const updatedDelegate = await this.delegateModel
