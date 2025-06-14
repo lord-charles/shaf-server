@@ -371,6 +371,7 @@ export class DelegatesService {
       const createdDelegate = new this.delegateModel({
         ...createDelegateDto,
         password: hashedPassword,
+        eventId: currentYearEventExists._id,
       });
       const savedDelegate = await createdDelegate.save();
 

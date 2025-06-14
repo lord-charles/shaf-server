@@ -332,13 +332,13 @@ export class CreateDelegateDto {
   @IsString()
   preferredLanguage?: string;
 
-  @ApiProperty({
-    description: 'Event ID (MongoDB ObjectId)',
-    example: '60d5ecb74f4d2c001f5e4b2a',
-  })
-  @IsMongoId()
-  @IsNotEmpty()
-  eventId: string;
+  // @ApiProperty({
+  //   description: 'Event ID (MongoDB ObjectId)',
+  //   example: '60d5ecb74f4d2c001f5e4b2a',
+  // })
+  // @IsMongoId()
+  // @IsNotEmpty()
+  // eventId: string;
 
   @ApiProperty({
     type: AddressDto,

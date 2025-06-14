@@ -142,7 +142,7 @@ export class DelegatesController {
         'attendanceMode',
         'identification',
         'languagesSpoken',
-        'eventId',
+        // 'eventId',
         'address',
         'emergencyContact',
         'password',
@@ -205,7 +205,7 @@ export class DelegatesController {
           example: ['English', 'Swahili'],
         },
         preferredLanguage: { type: 'string', example: 'English' },
-        eventId: { type: 'string', example: '60d5ecb74f4d2c001f5e4b2a' },
+        // eventId: { type: 'string', example: '60d5ecb74f4d2c001f5e4b2a' },
         address: {
           type: 'object',
           required: ['street', 'city', 'state', 'country', 'postalCode'],
