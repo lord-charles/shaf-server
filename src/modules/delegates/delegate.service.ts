@@ -801,18 +801,18 @@ export class DelegatesService {
         );
       }
 
-      if (user.status !== DelegateStatus.APPROVED) {
-        await this.systemLogsService.createLog(
-          'Inactive Account Login',
-          `Login attempt on inactive account: ${user.firstName} ${user.lastName}`,
-          LogSeverity.WARNING,
-          user.phoneNumber.toString(),
-          req,
-        );
-        throw new UnauthorizedException(
-          'Delegate Account has not been approved!',
-        );
-      }
+      // if (user.status !== DelegateStatus.APPROVED) {
+      //   await this.systemLogsService.createLog(
+      //     'Inactive Account Login',
+      //     `Login attempt on inactive account: ${user.firstName} ${user.lastName}`,
+      //     LogSeverity.WARNING,
+      //     user.phoneNumber.toString(),
+      //     req,
+      //   );
+      //   throw new UnauthorizedException(
+      //     'Delegate Account has not been approved!',
+      //   );
+      // }
 
       if (!user.password) {
         await this.systemLogsService.createLog(
