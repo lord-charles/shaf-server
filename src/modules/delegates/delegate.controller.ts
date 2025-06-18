@@ -371,7 +371,8 @@ export class DelegatesController {
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @Public()
+  @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Get all delegates',
     description:
@@ -389,17 +390,6 @@ export class DelegatesController {
         total: { type: 'number', example: 50 },
         page: { type: 'number', example: 1 },
         totalPages: { type: 'number', example: 5 },
-      },
-    },
-  })
-  @ApiBadRequestResponse({
-    description: 'Invalid query parameters',
-    schema: {
-      type: 'object',
-      properties: {
-        statusCode: { type: 'number', example: 400 },
-        message: { type: 'string', example: 'Invalid event ID format' },
-        error: { type: 'string', example: 'Bad Request' },
       },
     },
   })
@@ -444,6 +434,7 @@ export class DelegatesController {
     @Query('eventId') eventId?: string,
     @Query('delegateType') delegateType?: string,
     @Query('attendanceMode') attendanceMode?: string,
+    @Query('year') year?: number,
   ) {
     this.logger.log(`GET /delegates - Page: ${page}, Limit: ${limit}`);
     return await this.delegatesService.findAll(
@@ -452,6 +443,7 @@ export class DelegatesController {
       eventId,
       delegateType,
       attendanceMode,
+      year,
     );
   }
 
