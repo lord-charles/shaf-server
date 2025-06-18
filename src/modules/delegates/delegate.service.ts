@@ -454,12 +454,7 @@ export class DelegatesService {
     delegateType?: string,
     attendanceMode?: string,
     year?: number,
-  ): Promise<{
-    delegates: Delegate[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
+  ): Promise<Delegate[]> {
     try {
       this.logger.log(`Fetching delegates - Page: ${page}, Limit: ${limit}`);
 
@@ -501,12 +496,7 @@ export class DelegatesService {
 
       this.logger.log(`Successfully fetched ${delegates.length} delegates`);
 
-      return {
-        delegates: delegates.map((delegate) => delegate.toObject()),
-        total,
-        page,
-        totalPages,
-      };
+      return delegates;
     } catch (error) {
       this.logger.error(
         `Failed to fetch delegates: ${error.message}`,
