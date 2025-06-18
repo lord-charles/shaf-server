@@ -453,6 +453,7 @@ export class DelegatesService {
     eventId?: string,
     delegateType?: string,
     attendanceMode?: string,
+    year?: number,
   ): Promise<{
     delegates: Delegate[];
     total: number;
@@ -479,6 +480,10 @@ export class DelegatesService {
 
       if (attendanceMode) {
         filter.attendanceMode = attendanceMode;
+      }
+
+      if (year) {
+        filter.eventYear = year;
       }
 
       // Execute queries in parallel
