@@ -193,7 +193,7 @@ export class UserController {
     if (!userId) {
       throw new Error('User ID not found in token');
     }
-    const result = await this.notificationService.saveUserPushToken(
+    const result = await this.notificationService.saveDelegatePushToken(
       userId,
       registerPushTokenDto.token,
     );

@@ -19,14 +19,23 @@ export class NotificationProcessor extends WorkerHost {
   }
 
   async process(job: Job<NotificationJobData>): Promise<void> {
-    this.logger.log(`Processing notification job ${job.id} for delegate ${job.data.delegateId}`);
+    this.logger.log(
+      `Processing notification job ${job.id} for delegate ${job.data.delegateId}`,
+    );
     const { delegateId, title, body } = job.data;
 
     try {
-      await this.notificationService.sendNotificationToUser(delegateId, title, body);
+      await this.notificationService.sendNotificationToDelegate(
+        delegateId,
+        title,
+        body,
+      );
       this.logger.log(`Successfully sent push notification for job ${job.id}`);
     } catch (error) {
-      this.logger.error(`Failed to process notification job ${job.id}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to process notification job ${job.id}: ${error.message}`,
+        error.stack,
+      );
       // Re-throw the error to let BullMQ handle the job failure (e.g., retry)
       throw error;
     }
@@ -39,6 +48,9 @@ export class NotificationProcessor extends WorkerHost {
 
   @OnWorkerEvent('failed')
   onFailed(job: Job, err: Error) {
-    this.logger.error(`Job ${job.id} has failed with error: ${err.message}`, err.stack);
+    this.logger.error(
+      `Job ${job.id} has failed with error: ${err.message}`,
+      err.stack,
+    );
   }
 }

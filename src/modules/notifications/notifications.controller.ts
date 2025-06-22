@@ -1,68 +1,139 @@
-import { Controller, Post, Body, Param, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiBody, ApiProperty } from '@nestjs/swagger';
+import {
+  Controller,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  Get,
+  Patch,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiProperty,
+} from '@nestjs/swagger';
 import { NotificationService } from './services/notification.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'; // Assuming admin/specific role guard might be needed
-import { Roles } from '../auth/decorators/roles.decorator'; // If you have role-based access
-import { RolesGuard } from '../auth/guards/roles.guard'; // If you have role-based access
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { DelegateDocument } from '../delegates/delegates.schema';
 
-// DTO for sending notifications
 class SendNotificationDto {
-  @ApiProperty({ description: 'Title of the notification', example: 'New Update Available' })
+  @ApiProperty({ description: 'Title of the notification' })
   title: string;
 
-  @ApiProperty({ description: 'Body of the notification', example: 'Check out the latest features in version 2.0!' })
+  @ApiProperty({ description: 'Body of the notification' })
   body: string;
 
-  @ApiProperty({ description: 'Optional data payload (JSON)', example: { screen: 'UpdatesScreen', itemId: '123' }, required: false })
+  @ApiProperty({ description: 'Optional data payload (JSON)', required: false })
   data?: Record<string, unknown>;
+}
+
+class SendEmailDto {
+  @ApiProperty({ description: 'Title of the email' })
+  title: string;
+
+  @ApiProperty({ description: 'HTML body of the email' })
+  body: string;
 }
 
 @ApiTags('Notifications')
 @ApiBearerAuth()
 @Controller('notifications')
-// @UseGuards(JwtAuthGuard, RolesGuard) // Apply guards globally or per-route as needed
+@UseGuards(JwtAuthGuard)
 export class NotificationsController {
   private readonly logger = new Logger(NotificationsController.name);
 
   constructor(private readonly notificationService: NotificationService) {}
 
-  @Post('send/user/:userId')
-  @UseGuards(JwtAuthGuard) // Protect this endpoint
-  // @Roles('admin') // Example: Only admins can send to specific users
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send push notification to a specific user' })
-  @ApiParam({ name: 'userId', description: 'ID of the user to send notification to' })
-  @ApiBody({ type: SendNotificationDto })
-  @ApiResponse({ status: 200, description: 'Notification sent successfully or queued.' })
-  @ApiResponse({ status: 404, description: 'User not found.' })
-  async sendToUser(
-    @Param('userId') userId: string,
+  // --- Push Notifications ---
+  @Post('push/delegate/:delegateId')
+  @ApiOperation({ summary: 'Send push notification to a specific delegate' })
+  @ApiParam({ name: 'delegateId', description: 'ID of the delegate to notify' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  async sendPushToDelegate(
+    @Param('delegateId') delegateId: string,
     @Body() payload: SendNotificationDto,
   ) {
-    this.logger.log(`Attempting to send notification to user: ${userId}`);
-    await this.notificationService.sendNotificationToUser(
-      userId,
+    await this.notificationService.sendNotificationToDelegate(
+      delegateId,
       payload.title,
       payload.body,
       payload.data,
     );
-    return { success: true, message: 'Notification queued for user.' };
+    return { message: 'Push notification queued for delegate.' };
   }
 
-  @Post('send/all')
-  @UseGuards(JwtAuthGuard) // Protect this endpoint
-  // @Roles('admin') // Example: Only admins can send to all users
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Send push notification to all users' })
-  @ApiBody({ type: SendNotificationDto })
-  @ApiResponse({ status: 200, description: 'Notifications sent successfully or queued to all users.' })
-  async sendToAll(@Body() payload: SendNotificationDto) {
-    this.logger.log('Attempting to send notification to all users');
-    await this.notificationService.sendNotificationToAllUsers(
+  @Post('push/all')
+  @ApiOperation({ summary: 'Send push notification to all delegates' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  async sendPushToAll(@Body() payload: SendNotificationDto) {
+    await this.notificationService.sendNotificationToAllDelegates(
       payload.title,
       payload.body,
       payload.data,
     );
-    return { success: true, message: 'Notifications queued for all users.' };
+    return { message: 'Push notifications queued for all delegates.' };
+  }
+
+  // --- Email Notifications ---
+  @Post('email/delegate/:delegateId')
+  @ApiOperation({ summary: 'Send an email to a specific delegate' })
+  @ApiParam({ name: 'delegateId', description: 'ID of the delegate to email' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  async sendEmailToDelegate(
+    @Param('delegateId') delegateId: string,
+    @Body() payload: SendEmailDto,
+  ) {
+    await this.notificationService.sendEmailToDelegate(
+      delegateId,
+      payload.title,
+      payload.body,
+    );
+    return { message: 'Email queued for delegate.' };
+  }
+
+  @Post('email/all')
+  @ApiOperation({ summary: 'Send an email to all delegates' })
+  @HttpCode(HttpStatus.ACCEPTED)
+  async sendEmailToAll(@Body() payload: SendEmailDto) {
+    await this.notificationService.sendEmailToAllDelegates(
+      payload.title,
+      payload.body,
+    );
+    return { message: 'Emails queued for all delegates.' };
+  }
+
+  // --- User-specific Notification Management ---
+  @Get('my-notifications/:delegateId')
+  @ApiOperation({
+    summary: 'Get all notifications for the authenticated delegate',
+  })
+  async getMyNotifications(@Param('delegateId') delegateId: string) {
+    return this.notificationService.getNotificationsForDelegate(delegateId);
+  }
+
+  @Patch('read/:notificationId')
+  @ApiOperation({ summary: 'Mark a specific notification as read' })
+  @ApiParam({
+    name: 'notificationId',
+    description: 'ID of the notification to mark as read',
+  })
+  async markAsRead(@Param('notificationId') notificationId: string) {
+    return this.notificationService.markNotificationAsRead(notificationId);
+  }
+
+  @Patch('read/all')
+  @ApiOperation({
+    summary: 'Mark all notifications as read for the authenticated delegate',
+  })
+  async markAllAsRead(@Param('delegateId') delegateId: string) {
+    return this.notificationService.markAllNotificationsAsRead(delegateId);
   }
 }

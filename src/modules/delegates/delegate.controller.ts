@@ -824,7 +824,7 @@ export class DelegatesController {
     @Param('id') id: string,
     @Body() registerPushTokenDto: RegisterPushTokenDto,
   ) {
-    const result = await this.notificationService.saveUserPushToken(
+    const result = await this.notificationService.saveDelegatePushToken(
       id,
       registerPushTokenDto.token,
     );

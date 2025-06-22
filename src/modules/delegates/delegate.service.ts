@@ -101,7 +101,7 @@ export class DelegatesService {
     const emailSubject = 'Your Registration has been Approved!';
     const emailBody = this.createApprovalEmailTemplate(delegate);
     this.notificationService
-      .sendEmail(delegate.email, emailSubject, emailBody, [
+      .sendEmailWithAttachments(delegate.email, emailSubject, emailBody, [
         {
           filename: 'qr-code-badge.png',
           content: qrCodeBuffer,
@@ -119,7 +119,7 @@ export class DelegatesService {
     const pushTitle = 'Registration Approved!';
     const pushBody = `Congratulations, ${delegateName}! Your registration for the event has been approved.`;
     this.notificationService
-      .sendNotificationToUser(delegate._id.toString(), pushTitle, pushBody)
+      .sendNotificationToDelegate(delegate._id.toString(), pushTitle, pushBody)
       .catch((err) => {
         this.logger.error(
           `Failed to send approval push notification to delegate ${delegate._id}: ${err.message}`,
@@ -178,7 +178,7 @@ export class DelegatesService {
     const pushBody =
       'There is an update on your registration status. Please check your email for details.';
     this.notificationService
-      .sendNotificationToUser(delegate._id.toString(), pushTitle, pushBody)
+      .sendNotificationToDelegate(delegate._id.toString(), pushTitle, pushBody)
       .catch((err) => {
         this.logger.error(
           `Failed to send rejection push notification to delegate ${delegate._id}: ${err.message}`,

@@ -1,18 +1,17 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import axios from 'axios';
+import { Model, Types } from 'mongoose';
 import * as nodemailer from 'nodemailer';
-import Expo, {
-  ExpoPushMessage,
-  ExpoPushTicket,
-  ExpoPushReceiptId,
-} from 'expo-server-sdk';
+import Expo, { ExpoPushMessage } from 'expo-server-sdk';
 import {
-  Delegate,
-  DelegateDocument,
-} from 'src/modules/delegates/delegates.schema';
+  Notification,
+  NotificationDocument,
+  NotificationStatus,
+  NotificationType,
+} from '../schemas/notification.schema';
+import { Delegate, DelegateDocument } from '../../delegates/delegates.schema';
+import axios from 'axios';
 
 @Injectable()
 export class NotificationService {
@@ -23,18 +22,33 @@ export class NotificationService {
     private readonly configService: ConfigService,
     @InjectModel(Delegate.name)
     private readonly delegateModel: Model<DelegateDocument>,
+    @InjectModel(Notification.name)
+    private readonly notificationModel: Model<NotificationDocument>,
     private readonly expo: Expo,
   ) {
     this.transporter = nodemailer.createTransport({
       service: this.configService.get<string>('SMTP_SERVICE'),
       host: this.configService.get<string>('SMTP_HOST'),
       port: this.configService.get<number>('SMTP_PORT'),
-      secure: true,
+      secure: true, // true for 465, false for other ports
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
     });
+  }
+
+  private async _saveNotification(
+    notificationDetails: Partial<Notification>,
+  ): Promise<void> {
+    try {
+      await this.notificationModel.create(notificationDetails);
+    } catch (error) {
+      this.logger.error(
+        `Failed to save notification: ${error.message}`,
+        error.stack,
+      );
+    }
   }
 
   async sendSMS(phoneNumber: string, message: string): Promise<boolean> {
@@ -102,6 +116,36 @@ export class NotificationService {
     to: string,
     subject: string,
     html: string,
+    bcc?: string[],
+  ): Promise<boolean> {
+    try {
+      await this.transporter.verify();
+      const mailOptions: nodemailer.SendMailOptions = {
+        from: `"Shelter Afrique" <${this.configService.get<string>('SMTP_USER')}>`,
+        to,
+        subject,
+        html,
+      };
+
+      if (bcc && bcc.length > 0) {
+        mailOptions.bcc = bcc;
+      }
+
+      await this.transporter.sendMail(mailOptions);
+      this.logger.log(
+        `Email sent successfully to ${to}` +
+          (bcc ? ` and ${bcc.length} other(s) in BCC` : ''),
+      );
+      return true;
+    } catch (error) {
+      this.logger.error(`Error sending email to ${to}: ${error.message}`);
+      return false;
+    }
+  }
+  async sendEmailWithAttachments(
+    to: string,
+    subject: string,
+    html: string,
     attachments?: {
       filename: string;
       content: Buffer | string;
@@ -138,220 +182,212 @@ export class NotificationService {
     }
   }
 
-  // --- EXPO PUSH NOTIFICATION METHODS ---
-
-  async saveUserPushToken(
-    userId: string,
-    token: string,
-  ): Promise<DelegateDocument | null> {
-    if (!Expo.isExpoPushToken(token)) {
-      this.logger.error(`Push token ${token} is not a valid Expo push token`);
-      return null;
-    }
-
-    try {
-      const delegate = await this.delegateModel
-        .findById(userId)
-        .select('+expoPushTokens');
-      if (!delegate) {
-        this.logger.warn(
-          `Delegate with ID ${userId} not found for saving push token.`,
-        );
-        return null;
-      }
-
-      if (!delegate.expoPushTokens.includes(token)) {
-        delegate.expoPushTokens.push(token);
-        await delegate.save();
-        this.logger.log(`Saved push token for delegate ${userId}`);
-      } else {
-        this.logger.log(`Push token already exists for delegate ${userId}`);
-      }
-      return delegate;
-    } catch (error) {
-      this.logger.error(
-        `Error saving push token for delegate ${userId}: ${error.message}`,
-        error.stack,
+  async sendEmailToDelegate(
+    delegateId: string,
+    title: string,
+    body: string,
+  ): Promise<void> {
+    const delegate = await this.delegateModel.findById(delegateId);
+    if (!delegate || !delegate.email) {
+      throw new NotFoundException(
+        `Delegate with ID ${delegateId} not found or has no email.`,
       );
-      return null;
+    }
+    const success = await this.sendEmail(delegate.email, title, body);
+    if (success) {
+      await this._saveNotification({
+        recipient: delegate._id as Types.ObjectId,
+        title,
+        body,
+        type: NotificationType.EMAIL,
+      });
     }
   }
 
-  async sendPushNotification(
+  async sendEmailToAllDelegates(title: string, body: string): Promise<void> {
+    const delegates = await this.delegateModel
+      .find({ email: { $exists: true, $ne: null } })
+      .exec();
+
+    if (delegates.length === 0) {
+      this.logger.log('No delegates with emails found to send to.');
+      return;
+    }
+
+    this.logger.log(
+      `Queueing a single email for ${delegates.length} delegates.`,
+    );
+
+    const emails = delegates.map((d) => d.email);
+    const [to, ...bcc] = emails;
+
+    const success = await this.sendEmail(to, title, body, bcc);
+
+    if (success) {
+      this.logger.log(
+        `Email sent to all delegates. Saving notifications for each.`,
+      );
+      for (const delegate of delegates) {
+        await this._saveNotification({
+          recipient: delegate._id as Types.ObjectId,
+          title,
+          body,
+          type: NotificationType.EMAIL,
+        });
+      }
+    } else {
+      this.logger.error(
+        `Failed to send mass email to delegates. No notifications will be saved.`,
+      );
+    }
+  }
+
+  async saveDelegatePushToken(
+    delegateId: string,
+    token: string,
+  ): Promise<DelegateDocument> {
+    if (!Expo.isExpoPushToken(token)) {
+      this.logger.error(`Push token ${token} is not a valid Expo push token`);
+      throw new Error('Invalid Expo push token');
+    }
+    const delegate = await this.delegateModel.findByIdAndUpdate(
+      delegateId,
+      { $addToSet: { expoPushTokens: token } },
+      { new: true },
+    );
+    if (!delegate) {
+      throw new NotFoundException(`Delegate with ID ${delegateId} not found.`);
+    }
+    this.logger.log(`Saved push token for delegate ${delegateId}`);
+    return delegate;
+  }
+
+  private async _sendPushNotification(
     tokens: string[],
     title: string,
     body: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
-    const validTokens = tokens.filter((token) => {
-      if (!Expo.isExpoPushToken(token)) {
-        this.logger.warn(
-          `Token ${token} is not a valid Expo push token and will be skipped.`,
-        );
-        return false;
-      }
-      return true;
-    });
-
-    if (validTokens.length === 0) {
-      this.logger.log('No valid Expo push tokens provided.');
-      return;
-    }
+    const validTokens = tokens.filter((token) => Expo.isExpoPushToken(token));
+    if (validTokens.length === 0) return;
 
     const messages: ExpoPushMessage[] = validTokens.map((pushToken) => ({
       to: pushToken,
       sound: 'default',
       title,
       body,
-      data: data || {},
-      // channelId: 'default', // Optional: if you have specific channels on Android
+      data,
     }));
 
     const chunks = this.expo.chunkPushNotifications(messages);
-    const tickets: ExpoPushTicket[] = [];
-
-    this.logger.log(
-      `Sending ${messages.length} push notifications in ${chunks.length} chunk(s).`,
-    );
-
     for (const chunk of chunks) {
       try {
-        const ticketChunk = await this.expo.sendPushNotificationsAsync(chunk);
-        tickets.push(...ticketChunk);
-
-        ticketChunk.forEach((ticket) => {
-          if (ticket.status === 'error') {
-            this.logger.error(
-              `Error sending push notification: ${ticket.message}`,
-              ticket.details,
-            );
-            // Potentially remove invalid tokens from DB here based on error type
-            if (
-              ticket.details &&
-              ticket.details.error === 'DeviceNotRegistered'
-            ) {
-              // Extract token from the error message, e.g., "The recipient \"ExponentPushToken[xxxxxxxxxxx]\" is not a registered device."
-              const match = ticket.message.match(
-                /ExponentPushToken\[[a-zA-Z0-9_-]+\]/,
-              );
-              if (match && match[0]) {
-                const invalidToken = match[0];
-                this.logger.warn(
-                  `DeviceNotRegistered: Attempting to remove token: ${invalidToken}`,
-                );
-                this.removeInvalidPushToken(invalidToken);
-              } else {
-                this.logger.warn(
-                  `DeviceNotRegistered: Could not parse token from message: ${ticket.message}`,
-                );
-              }
-            }
-          }
-        });
+        await this.expo.sendPushNotificationsAsync(chunk);
       } catch (error) {
-        this.logger.error(
-          `Error sending push notification chunk: ${error.message}`,
-          error.stack,
-        );
+        this.logger.error('Error sending push notification chunk', error);
       }
     }
-    this.logger.log(
-      'Push notifications sent, tickets received:',
-      tickets.filter((t) => t.status === 'ok').length + ' ok',
-    );
   }
 
-  async sendNotificationToUser(
-    userId: string,
+  async sendNotificationToDelegate(
+    delegateId: string,
     title: string,
     body: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
-    try {
-      const delegate = await this.delegateModel
-        .findById(userId)
-        .select('+expoPushTokens')
-        .exec();
-      if (!delegate) {
-        this.logger.warn(
-          `User with ID ${userId} not found for sending push notification.`,
-        );
-        return;
-      }
-      if (!delegate.expoPushTokens || delegate.expoPushTokens.length === 0) {
-        this.logger.log(`User ${userId} has no registered push tokens.`);
-        return;
-      }
-      await this.sendPushNotification(
-        delegate.expoPushTokens,
+    const delegate = await this.delegateModel
+      .findById(delegateId)
+      .select('+expoPushTokens')
+      .exec();
+    if (!delegate) {
+      throw new NotFoundException(`Delegate with ID ${delegateId} not found.`);
+    }
+    if (!delegate.expoPushTokens || delegate.expoPushTokens.length === 0) {
+      this.logger.log(`Delegate ${delegateId} has no registered push tokens.`);
+      return;
+    }
+    await this._sendPushNotification(
+      delegate.expoPushTokens,
+      title,
+      body,
+      data,
+    );
+    await this._saveNotification({
+      recipient: delegate._id as Types.ObjectId,
+      title,
+      body,
+      data,
+      type: NotificationType.PUSH,
+    });
+  }
+
+  async sendNotificationToAllDelegates(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ): Promise<void> {
+    const delegates = await this.delegateModel
+      .find({ expoPushTokens: { $exists: true, $ne: [] } })
+      .select('+expoPushTokens')
+      .exec();
+    if (delegates.length === 0) {
+      this.logger.log('No delegates with registered push tokens found.');
+      return;
+    }
+    const allTokens = delegates.flatMap((delegate) => delegate.expoPushTokens);
+    const uniqueTokens = [...new Set(allTokens)];
+
+    await this._sendPushNotification(uniqueTokens, title, body, data);
+
+    for (const delegate of delegates) {
+      await this._saveNotification({
+        recipient: delegate._id as Types.ObjectId,
         title,
         body,
         data,
-      );
-      this.logger.log(`Push notification sent to user ${userId}`);
-    } catch (error) {
-      this.logger.error(
-        `Error sending push notification to user ${userId}: ${error.message}`,
-        error.stack,
-      );
+        type: NotificationType.PUSH,
+      });
     }
   }
 
-  async sendNotificationToAllUsers(
-    title: string,
-    body: string,
-    data?: Record<string, unknown>,
-  ): Promise<void> {
-    try {
-      const usersWithTokens = await this.delegateModel
-        .find({ expoPushTokens: { $exists: true, $not: { $size: 0 } } })
-        .select('expoPushTokens')
-        .exec();
-
-      if (!usersWithTokens || usersWithTokens.length === 0) {
-        this.logger.log('No users with registered push tokens found.');
-        return;
-      }
-
-      const allTokens: string[] = usersWithTokens.reduce((acc, user) => {
-        if (user.expoPushTokens) {
-          acc.push(...user.expoPushTokens);
-        }
-        return acc;
-      }, [] as string[]);
-
-      const uniqueTokens = [...new Set(allTokens)];
-
-      if (uniqueTokens.length > 0) {
-        await this.sendPushNotification(uniqueTokens, title, body, data);
-        this.logger.log(
-          `Push notification sent to ${uniqueTokens.length} tokens for all users.`,
-        );
-      } else {
-        this.logger.log(
-          'No unique push tokens found to send notifications to all users.',
-        );
-      }
-    } catch (error) {
-      this.logger.error(
-        `Error sending push notification to all users: ${error.message}`,
-        error.stack,
-      );
-    }
+  async getNotificationsForDelegate(
+    delegateId: string,
+  ): Promise<NotificationDocument[]> {
+    return this.notificationModel
+      .find({ recipient: new Types.ObjectId(delegateId) })
+      .sort({ createdAt: -1 })
+      .exec();
   }
 
-  private async removeInvalidPushToken(token: string): Promise<void> {
-    try {
-      await this.delegateModel.updateMany(
-        { expoPushTokens: token },
-        { $pull: { expoPushTokens: token } },
-      );
-      this.logger.log(`Removed invalid push token ${token} from all users.`);
-    } catch (error) {
-      this.logger.error(
-        `Error removing invalid push token ${token}: ${error.message}`,
-        error.stack,
+  async markNotificationAsRead(
+    notificationId: string,
+  ): Promise<NotificationDocument> {
+    const notification = await this.notificationModel.findOneAndUpdate(
+      { _id: new Types.ObjectId(notificationId) },
+      { status: NotificationStatus.READ },
+      { new: true },
+    );
+    if (!notification) {
+      throw new NotFoundException(
+        `Notification with ID ${notificationId} not found.`,
       );
     }
+    return notification;
+  }
+
+  async markAllNotificationsAsRead(
+    delegateId: string,
+  ): Promise<{ acknowledged: boolean; modifiedCount: number }> {
+    const result = await this.notificationModel.updateMany(
+      {
+        recipient: new Types.ObjectId(delegateId),
+        status: NotificationStatus.UNREAD,
+      },
+      { status: NotificationStatus.READ },
+    );
+    return {
+      acknowledged: result.acknowledged,
+      modifiedCount: result.modifiedCount,
+    };
   }
 }
