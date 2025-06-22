@@ -39,6 +39,7 @@ import {
 } from './dto/create.dto';
 import { News, NewsStatus, NewsCategory, NewsPriority } from './schema';
 import { NewsQuery, NewsService, PaginatedResponse } from './new.service';
+import { Public } from '../auth/decorators/public.decorator';
 
 // Define interfaces for standardized responses
 interface ApiResponseDto<T> {
@@ -156,6 +157,7 @@ export class NewsController {
    * Get all news articles with filtering and pagination
    */
   @Get()
+  @Public()
   @ApiOperation({
     summary: 'Retrieve news articles',
     description:
@@ -430,6 +432,7 @@ export class NewsController {
    * Get a news article by slug
    */
   @Get('slug/:slug')
+  @Public()
   @ApiOperation({
     summary: 'Get news article by slug',
     description:
