@@ -186,8 +186,13 @@ export class NotificationService {
     delegateId: string,
     title: string,
     body: string,
+    data?: Record<string, unknown>,
   ): Promise<void> {
-    const delegate = await this.delegateModel.findById(delegateId);
+    const delegate = await this.delegateModel
+      .findById(delegateId)
+      .select('+expoPushTokens')
+      .exec();
+
     if (!delegate || !delegate.email) {
       throw new NotFoundException(
         `Delegate with ID ${delegateId} not found or has no email.`,
@@ -200,13 +205,28 @@ export class NotificationService {
         title,
         body,
         type: NotificationType.EMAIL,
+        data,
       });
+
+      if (delegate.expoPushTokens && delegate.expoPushTokens.length > 0) {
+        await this._sendPushNotification(
+          delegate.expoPushTokens,
+          title,
+          body,
+          data,
+        );
+      }
     }
   }
 
-  async sendEmailToAllDelegates(title: string, body: string): Promise<void> {
+  async sendEmailToAllDelegates(
+    title: string,
+    body: string,
+    data?: Record<string, unknown>,
+  ): Promise<void> {
     const delegates = await this.delegateModel
       .find({ email: { $exists: true, $ne: null } })
+      .select('+expoPushTokens')
       .exec();
 
     if (delegates.length === 0) {
@@ -225,14 +245,25 @@ export class NotificationService {
 
     if (success) {
       this.logger.log(
-        `Email sent to all delegates. Saving notifications for each.`,
+        `Email sent to all delegates. Saving notifications and sending pushes.`,
       );
+
+      const allTokens = delegates.flatMap(
+        (delegate) => delegate.expoPushTokens || [],
+      );
+      const uniqueTokens = [...new Set(allTokens)];
+
+      if (uniqueTokens.length > 0) {
+        await this._sendPushNotification(uniqueTokens, title, body, data);
+      }
+
       for (const delegate of delegates) {
         await this._saveNotification({
           recipient: delegate._id as Types.ObjectId,
           title,
           body,
           type: NotificationType.EMAIL,
+          data,
         });
       }
     } else {
