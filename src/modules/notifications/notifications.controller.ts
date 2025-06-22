@@ -23,6 +23,7 @@ import { NotificationService } from './services/notification.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { DelegateDocument } from '../delegates/delegates.schema';
+import { Public } from '../auth/decorators/public.decorator';
 
 class SendNotificationDto {
   @ApiProperty({ description: 'Title of the notification' })
@@ -112,6 +113,7 @@ export class NotificationsController {
 
   // --- User-specific Notification Management ---
   @Get('my-notifications/:delegateId')
+  @Public()
   @ApiOperation({
     summary: 'Get all notifications for the authenticated delegate',
   })
@@ -119,21 +121,33 @@ export class NotificationsController {
     return this.notificationService.getNotificationsForDelegate(delegateId);
   }
 
-  @Patch('read/:notificationId')
-  @ApiOperation({ summary: 'Mark a specific notification as read' })
+  @Patch('read/all/:delegateId')
+  @Public()
+  @ApiOperation({
+    summary: 'Mark all notifications as read for the authenticated delegate',
+  })
+  @ApiParam({ name: 'delegateId', description: 'ID of the delegate' })
+  async markAllAsRead(@Param('delegateId') delegateId: string) {
+    return this.notificationService.markAllNotificationsAsRead(delegateId);
+  }
+
+  @Patch('read/:delegateId/:notificationId')
+  @Public()
+  @ApiOperation({
+    summary: 'Mark a notification as read for the authenticated delegate',
+  })
+  @ApiParam({ name: 'delegateId', description: 'ID of the delegate' })
   @ApiParam({
     name: 'notificationId',
     description: 'ID of the notification to mark as read',
   })
-  async markAsRead(@Param('notificationId') notificationId: string) {
-    return this.notificationService.markNotificationAsRead(notificationId);
-  }
-
-  @Patch('read/all')
-  @ApiOperation({
-    summary: 'Mark all notifications as read for the authenticated delegate',
-  })
-  async markAllAsRead(@Param('delegateId') delegateId: string) {
-    return this.notificationService.markAllNotificationsAsRead(delegateId);
+  async markAsRead(
+    @Param('delegateId') delegateId: string,
+    @Param('notificationId') notificationId: string,
+  ) {
+    return this.notificationService.markNotificationAsRead(
+      delegateId,
+      notificationId,
+    );
   }
 }

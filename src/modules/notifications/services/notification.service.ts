@@ -360,16 +360,20 @@ export class NotificationService {
   }
 
   async markNotificationAsRead(
+    delegateId: string,
     notificationId: string,
   ): Promise<NotificationDocument> {
     const notification = await this.notificationModel.findOneAndUpdate(
-      { _id: new Types.ObjectId(notificationId) },
+      {
+        _id: new Types.ObjectId(notificationId),
+        recipient: new Types.ObjectId(delegateId),
+      },
       { status: NotificationStatus.READ },
       { new: true },
     );
     if (!notification) {
       throw new NotFoundException(
-        `Notification with ID ${notificationId} not found.`,
+        `Notification with ID ${notificationId} not found for delegate ${delegateId}.`,
       );
     }
     return notification;
