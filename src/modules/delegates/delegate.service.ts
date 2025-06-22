@@ -492,8 +492,6 @@ export class DelegatesService {
         this.delegateModel.countDocuments(filter).exec(),
       ]);
 
-      const totalPages = Math.ceil(total / limit);
-
       this.logger.log(`Successfully fetched ${delegates.length} delegates`);
 
       return delegates;

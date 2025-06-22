@@ -3,6 +3,12 @@ import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import {
+  News,
+  Author,
+  MediaAttachment,
+  Translation,
+} from './modules/news/schema';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -27,7 +33,9 @@ async function bootstrap() {
     .addServer('/')
     .build();
 
-  const document = SwaggerModule.createDocument(app, config);
+  const document = SwaggerModule.createDocument(app, config, {
+    extraModels: [News, Author, MediaAttachment, Translation],
+  });
 
   // Setup Swagger under the global prefix path
   SwaggerModule.setup('shaf/api/docs', app, document, {

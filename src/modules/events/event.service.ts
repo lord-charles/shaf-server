@@ -9,7 +9,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types, FilterQuery } from 'mongoose';
 import { Event, EventDocument, EventStatus } from './events.schema';
 import { CreateEventDto, UpdateEventDto } from './dto/event.dto';
-import { PaginatedEventsResponseDto } from './dto/res.dto';
 
 export interface FindAllOptions {
   page: number;

@@ -9,6 +9,7 @@ import { DelegatesModule } from './modules/delegates/delegate.module';
 import { QueuesModule } from './modules/queues/queues.module';
 import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './modules/events/event.module';
+import { NewsModule } from './modules/news/news.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -22,6 +23,7 @@ import { EventsModule } from './modules/events/event.module';
     DelegatesModule,
     QueuesModule,
     EventsModule,
+    NewsModule,
   ],
   controllers: [],
   providers: [],
