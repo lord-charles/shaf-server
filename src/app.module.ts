@@ -10,6 +10,7 @@ import { QueuesModule } from './modules/queues/queues.module';
 import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './modules/events/event.module';
 import { NewsModule } from './modules/news/news.module';
+import { VideoModule } from './video/video.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -24,6 +25,7 @@ import { NewsModule } from './modules/news/news.module';
     QueuesModule,
     EventsModule,
     NewsModule,
+    VideoModule,
   ],
   controllers: [],
   providers: [],

@@ -14,7 +14,7 @@ import {
 } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
-// Enums for better type safety
+// Enums
 export enum NewsStatus {
   DRAFT = 'draft',
   PUBLISHED = 'published',
@@ -132,7 +132,7 @@ export class Translation {
   @Prop({ required: true })
   @IsString()
   @IsNotEmpty()
-  language: string; // ISO 639-1 codes (en, fr, ar, sw, etc.)
+  language: string; //(en, fr)
 
   @ApiProperty({ description: 'Translated title' })
   @Prop({ required: true })
@@ -264,7 +264,7 @@ export class News extends Document {
   // Publishing control
   @Prop({
     default: Date.now,
-    index: -1, // Descending index for recent news
+    index: -1,
   })
   @IsDate()
   @IsOptional()
@@ -389,14 +389,12 @@ export class News extends Document {
   })
   deletedBy?: Types.ObjectId;
 
-  // Timestamps (automatically managed by Mongoose)
   createdAt: Date;
   updatedAt: Date;
 }
 
 export const NewsSchema = SchemaFactory.createForClass(News);
 
-// Compound indexes for better query performance
 NewsSchema.index({ status: 1, publishedAt: -1 });
 NewsSchema.index({ category: 1, publishedAt: -1 });
 NewsSchema.index({ featured: 1, publishedAt: -1 });
@@ -405,7 +403,6 @@ NewsSchema.index({ tags: 1, publishedAt: -1 });
 NewsSchema.index({ createdBy: 1, createdAt: -1 });
 NewsSchema.index({ deleted: 1, status: 1, publishedAt: -1 });
 
-// Text search index for full-text search
 NewsSchema.index(
   {
     title: 'text',
@@ -451,5 +448,4 @@ NewsSchema.virtual('url').get(function () {
   return `/news/${this.slug}`;
 });
 
-// Export type for TypeScript
 export type NewsDocument = News & Document;
