@@ -215,9 +215,8 @@ export class CreateDelegateDto {
     description: 'Title of the delegate',
     example: Title.MR,
   })
-  @IsEnum(Title)
   @IsNotEmpty()
-  title: Title;
+  title: string;
 
   @ApiProperty({
     description: 'Delegate first name',

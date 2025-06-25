@@ -49,8 +49,8 @@ export enum Title {
   collection: 'delegates',
 })
 export class Delegate {
-  @Prop({ type: String, enum: Title, required: true })
-  title: Title;
+  @Prop({ type: String, required: true })
+  title: string;
 
   @Prop({ required: true, trim: true })
   firstName: string;

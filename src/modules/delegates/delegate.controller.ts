@@ -107,11 +107,11 @@ export class DelegatesController {
           }
           if (
             file.fieldname === 'document' &&
-            !file.originalname.match(/\.(pdf|doc|docx)$/i)
+            !file.originalname.match(/\.(pdf|doc|docx|jpg|png|jpeg)$/i)
           ) {
             return cb(
               new BadRequestException(
-                'Only PDF, DOC, DOCX files are allowed for documents',
+                'Only PDF, DOC, DOCX, JPG, PNG, JPEG files are allowed for documents',
               ),
               false,
             );
