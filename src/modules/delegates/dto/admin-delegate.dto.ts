@@ -21,6 +21,14 @@ export class RejectDelegateDto {
   @IsString()
   @IsNotEmpty()
   rejectionReason: string;
+
+  @ApiProperty({
+    description: 'ID of the admin rejecting the delegate registration',
+    example: '60d5ecb74f4d2c001f5e4b3b',
+  })
+  @IsMongoId()
+  @IsNotEmpty()
+  rejectedBy: string;
 }
 
 // Check-in Delegate DTO
@@ -32,4 +40,13 @@ export class CheckInDelegateDto {
   @IsOptional()
   @IsString()
   checkInLocation?: string;
+
+  @ApiPropertyOptional({
+    description: 'ID of the admin checking in the delegate',
+    example: '60d5ecb74f4d2c001f5e4b3b',
+  })
+  @IsOptional()
+  @IsMongoId()
+  @IsNotEmpty()
+  checkedInBy?: string;
 }

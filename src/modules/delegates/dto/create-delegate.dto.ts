@@ -50,6 +50,14 @@ export class IdentificationDto {
   expiryDate?: string;
 
   @ApiProperty({
+    description: 'Is delegate an admin',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isAdmin: boolean;
+
+  @ApiProperty({
     description: 'Country that issued the document',
     example: 'Kenya',
   })
@@ -265,6 +273,14 @@ export class CreateDelegateDto {
   @IsString()
   @IsNotEmpty()
   nationality: string;
+
+  @ApiPropertyOptional({
+    description: 'Delegate is admin',
+    example: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isAdmin?: boolean;
 
   @ApiPropertyOptional({
     description: 'Organization name',

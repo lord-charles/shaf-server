@@ -166,6 +166,7 @@ export class DelegatesController {
           format: 'email',
           example: 'john.doe@example.com',
         },
+        isAdmin: { type: 'boolean', example: false },
         eventYear: { type: 'number', example: 2025 },
         phoneNumber: { type: 'string', example: '+254712345678' },
         nationality: { type: 'string', example: 'Kenyan' },
@@ -452,7 +453,7 @@ export class DelegatesController {
   // ===========================================================================
 
   @Post(':id/approve')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @ApiOperation({ summary: 'Approve a delegate registration' })
   @ApiParam({ name: 'id', description: 'Delegate ID' })
   @ApiOkResponse({
@@ -464,15 +465,13 @@ export class DelegatesController {
   async approve(
     @Param('id') id: string,
     @Body() approveDto: ApproveDelegateDto,
-    @Req() req: ExpressRequest,
   ): Promise<Delegate> {
-    const userId = (req.user as any).id;
     this.logger.log(`POST /delegates/${id}/approve - Approving delegate`);
-    return this.delegatesService.approve(id, approveDto, userId);
+    return this.delegatesService.approve(id, approveDto, approveDto.approvedBy);
   }
 
   @Post(':id/reject')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @ApiOperation({ summary: 'Reject a delegate registration' })
   @ApiParam({ name: 'id', description: 'Delegate ID' })
   @ApiOkResponse({
@@ -492,7 +491,7 @@ export class DelegatesController {
   }
 
   @Post(':id/check-in')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @ApiOperation({ summary: 'Check in a delegate' })
   @ApiParam({ name: 'id', description: 'Delegate ID' })
   @ApiOkResponse({
@@ -504,11 +503,13 @@ export class DelegatesController {
   async checkIn(
     @Param('id') id: string,
     @Body() checkInDto: CheckInDelegateDto,
-    @Req() req: ExpressRequest,
   ): Promise<Delegate> {
-    const userId = (req.user as any).id;
     this.logger.log(`POST /delegates/${id}/check-in - Checking in delegate`);
-    return this.delegatesService.checkIn(id, checkInDto, userId);
+    return this.delegatesService.checkIn(
+      id,
+      checkInDto,
+      checkInDto.checkedInBy,
+    );
   }
 
   @Get(':id/badge')

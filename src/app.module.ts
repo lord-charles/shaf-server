@@ -11,6 +11,8 @@ import { ConfigModule } from '@nestjs/config';
 import { EventsModule } from './modules/events/event.module';
 import { NewsModule } from './modules/news/news.module';
 import { VideoModule } from './video/video.module';
+import { PanelistModule } from './panelist/panelist.module';
+import { InformationModule } from './information/information.module';
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -26,6 +28,8 @@ import { VideoModule } from './video/video.module';
     EventsModule,
     NewsModule,
     VideoModule,
+    PanelistModule,
+    InformationModule,
   ],
   controllers: [],
   providers: [],

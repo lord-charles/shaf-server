@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   News,
@@ -17,6 +17,16 @@ async function bootstrap() {
 
   // Enable CORS
   app.enableCors();
+
+  // Use global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      // forbidNonWhitelisted: true, // Reject requests with properties not defined in DTO
+      // skipMissingProperties: false, // Ensure all properties are validated, even if missing
+    }),
+  );
 
   // Set global prefix for all routes
   app.setGlobalPrefix('shaf/api');
