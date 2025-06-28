@@ -36,7 +36,7 @@ export class InformationService {
   /**
    * Retrieve all information documents, optionally filtered by year
    */
-  async findAll(year?: string): Promise<Information[]> {
+  async findAll(year?: string) {
     try {
       const query: FilterQuery<Information> = {};
 
@@ -45,7 +45,7 @@ export class InformationService {
       }
 
       return await this.informationModel
-        .find(query)
+        .findOne(query)
         .sort({ eventStartDate: -1 })
         .select('-__v')
         .exec();

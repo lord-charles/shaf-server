@@ -483,11 +483,9 @@ export class DelegatesController {
   async reject(
     @Param('id') id: string,
     @Body() rejectDto: RejectDelegateDto,
-    @Req() req: ExpressRequest,
   ): Promise<Delegate> {
-    const userId = (req.user as any).id;
     this.logger.log(`POST /delegates/${id}/reject - Rejecting delegate`);
-    return this.delegatesService.reject(id, rejectDto, userId);
+    return this.delegatesService.reject(id, rejectDto, rejectDto.rejectedBy);
   }
 
   @Post(':id/check-in')

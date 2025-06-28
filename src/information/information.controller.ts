@@ -29,16 +29,16 @@ import { Information } from './entities/information.entity';
 import { CreateInformationDto } from './dto/create-information.dto';
 import { Public } from 'src/modules/auth/decorators/public.decorator';
 
-@ApiTags('Delegate Information')
+@ApiTags('Information')
 @ApiBearerAuth()
-@Controller('delegate-information')
+@Controller('information')
 export class InformationController {
   constructor(private readonly informationService: InformationService) {}
 
   @Post()
   @UseInterceptors(AnyFilesInterceptor())
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Create delegate event information' })
+  @ApiOperation({ summary: 'Create event information' })
   @ApiBody({
     description: 'Multipart form data for creating event information.',
     schema: {
@@ -407,7 +407,7 @@ export class InformationController {
     description: 'List of all delegate information',
     type: [Information],
   })
-  async findAll(@Query('year') year?: string): Promise<Information[]> {
+  async findAll(@Query('year') year?: string) {
     return this.informationService.findAll(year);
   }
 
