@@ -212,6 +212,7 @@ export class DelegatesService {
 
     // Update delegate status
     delegate.status = DelegateStatus.CHECKED_IN;
+    delegate.hasCheckedIn = true;
     delegate.checkedInBy = new Types.ObjectId(checkedInBy || '');
     delegate.checkInDate = new Date();
     delegate.checkInLocation = checkInDto.checkInLocation;
