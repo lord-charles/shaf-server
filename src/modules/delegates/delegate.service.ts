@@ -817,7 +817,7 @@ export class DelegatesService {
           req,
         );
         throw new UnauthorizedException(
-          'ShafDb: Authentication process error.',
+          'ShafDb: You need to reset your password.',
         );
       }
       const isValidPassword = await bcrypt.compare(
