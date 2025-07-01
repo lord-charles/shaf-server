@@ -293,7 +293,7 @@ export class DelegatesService {
         </div>
         <div style="padding: 30px;">
           <p style="font-size: 18px;">Dear ${delegateName},</p>
-          <p style="font-size: 16px;">This email confirms that you have been successfully checked in at <strong>${delegate.checkInLocation}</strong>. We are thrilled to have you with us!</p>
+          <p style="font-size: 16px;">This email confirms that you have been successfully checked in. We are thrilled to have you with us!</p>
           <p style="font-size: 16px;">We hope you have an inspiring and productive time at the event. If you need any assistance, please do not hesitate to contact our staff.</p>
           <p style="font-size: 16px; margin-top: 30px;">Enjoy the event!</p>
           <p style="font-size: 16px; margin-top: 30px;">Best regards,<br><strong>The Event Team</strong></p>
