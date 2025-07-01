@@ -321,7 +321,30 @@ export class DelegatesController {
       `POST /delegates - Creating delegate: ${createDelegateDto.email}`,
     );
 
+    // Manually parse nested JSON string fields from multipart/form-data
+    const fieldsToParse = [
+      'identification',
+      'address',
+      'emergencyContact',
+      'accommodationDetails',
+      'flightDetails',
+      'socialMedia',
+    ];
 
+    for (const field of fieldsToParse) {
+      if (
+        createDelegateDto[field] &&
+        typeof createDelegateDto[field] === 'string'
+      ) {
+        try {
+          createDelegateDto[field] = JSON.parse(
+            createDelegateDto[field] as string,
+          );
+        } catch {
+          throw new BadRequestException(`Invalid JSON format for ${field}.`);
+        }
+      }
+    }
     if (files?.profilePicture?.[0]) {
       const result = await this.cloudinaryService.uploadFile(
         files.profilePicture[0],
