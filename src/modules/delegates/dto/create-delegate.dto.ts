@@ -6,12 +6,9 @@ import {
   IsNotEmpty,
   IsOptional,
   IsBoolean,
-  IsDateString,
   IsArray,
   ValidateNested,
-  IsPhoneNumber,
   IsUrl,
-  IsMongoId,
   IsNumber,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
@@ -46,7 +43,7 @@ export class IdentificationDto {
     example: '2030-12-31T00:00:00.000Z',
   })
   @IsOptional()
-  @IsDateString()
+  @IsString()
   expiryDate?: string;
 
   @ApiProperty({
@@ -62,8 +59,8 @@ export class IdentificationDto {
     example: 'Kenya',
   })
   @IsString()
-  @IsNotEmpty()
-  issuingCountry: string;
+  @IsOptional()
+  issuingCountry?: string;
 
   @IsOptional()
   @IsUrl()
@@ -76,7 +73,7 @@ export class AddressDto {
     example: '123 Uhuru Highway',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   street: string;
 
   @ApiProperty({
@@ -84,7 +81,7 @@ export class AddressDto {
     example: 'Nairobi',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   city: string;
 
   @ApiProperty({
@@ -92,7 +89,7 @@ export class AddressDto {
     example: 'Nairobi County',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   state: string;
 
   @ApiProperty({
@@ -100,7 +97,7 @@ export class AddressDto {
     example: 'Kenya',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   country: string;
 
   @ApiProperty({
@@ -108,7 +105,7 @@ export class AddressDto {
     example: '00100',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   postalCode: string;
 }
 
@@ -118,7 +115,7 @@ export class EmergencyContactDto {
     example: 'Jane Doe Smith',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   name: string;
 
   @ApiProperty({
@@ -126,15 +123,15 @@ export class EmergencyContactDto {
     example: 'Spouse',
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   relationship: string;
 
   @ApiProperty({
     description: 'Emergency contact phone number',
     example: '+254712345678',
   })
-  @IsPhoneNumber()
-  @IsNotEmpty()
+  @IsString()
+  @IsOptional()
   phoneNumber: string;
 
   @ApiPropertyOptional({
@@ -160,7 +157,6 @@ export class AccommodationDetailsDto {
     example: '2025-06-15T14:00:00.000Z',
   })
   @IsOptional()
-  @IsDateString()
   checkIn?: string;
 
   @ApiPropertyOptional({
@@ -168,7 +164,6 @@ export class AccommodationDetailsDto {
     example: '2025-06-18T11:00:00.000Z',
   })
   @IsOptional()
-  @IsDateString()
   checkOut?: string;
 
   @ApiPropertyOptional({
@@ -435,7 +430,6 @@ export class CreateDelegateDto {
     example: '2025-06-15T10:00:00.000Z',
   })
   @IsOptional()
-  @IsDateString()
   arrivalDate?: string;
 
   @ApiPropertyOptional({
@@ -443,7 +437,6 @@ export class CreateDelegateDto {
     example: '2025-06-18T15:00:00.000Z',
   })
   @IsOptional()
-  @IsDateString()
   departureDate?: string;
 
   @ApiPropertyOptional({
