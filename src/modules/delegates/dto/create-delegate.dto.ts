@@ -139,7 +139,6 @@ export class EmergencyContactDto {
     example: 'jane.doe@example.com',
   })
   @IsOptional()
-  @IsEmail()
   email?: string;
 }
 
@@ -199,7 +198,6 @@ export class SocialMediaDto {
     example: 'https://linkedin.com/in/johndoe',
   })
   @IsOptional()
-  @IsUrl()
   linkedin?: string;
 
   @ApiPropertyOptional({
@@ -207,7 +205,6 @@ export class SocialMediaDto {
     example: 'https://twitter.com/johndoe',
   })
   @IsOptional()
-  @IsUrl()
   twitter?: string;
 }
 
