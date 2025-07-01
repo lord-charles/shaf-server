@@ -14,7 +14,7 @@ import {
   IsMongoId,
   IsNumber,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import {
   DelegateType,
   AttendanceMode,
@@ -254,6 +254,7 @@ export class CreateDelegateDto {
     description: 'Delegate event year',
     example: '2025',
   })
+  @Type(() => Number)
   @IsNumber()
   @IsNotEmpty()
   eventYear: number;
@@ -262,7 +263,6 @@ export class CreateDelegateDto {
     description: 'Delegate phone number with country code',
     example: '+254712345678',
   })
-  @IsPhoneNumber()
   @IsNotEmpty()
   phoneNumber: string;
 
@@ -278,6 +278,7 @@ export class CreateDelegateDto {
     description: 'Delegate is admin',
     example: false,
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   isAdmin?: boolean;
@@ -320,6 +321,10 @@ export class CreateDelegateDto {
     type: IdentificationDto,
     description: 'Identification document details',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @ValidateNested()
   @Type(() => IdentificationDto)
   @IsNotEmpty()
@@ -334,6 +339,9 @@ export class CreateDelegateDto {
     description: 'Languages spoken by delegate',
     example: ['English', 'Swahili', 'French'],
   })
+  @Transform(({ value }) =>
+    typeof value === 'string' ? value.split(',') : value,
+  )
   @IsArray()
   @IsString({ each: true })
   @IsNotEmpty({ each: true })
@@ -359,6 +367,10 @@ export class CreateDelegateDto {
     type: AddressDto,
     description: 'Delegate address',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @ValidateNested()
   @Type(() => AddressDto)
   @IsNotEmpty()
@@ -368,6 +380,10 @@ export class CreateDelegateDto {
     type: EmergencyContactDto,
     description: 'Emergency contact information',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @ValidateNested()
   @Type(() => EmergencyContactDto)
   @IsNotEmpty()
@@ -378,6 +394,7 @@ export class CreateDelegateDto {
     example: true,
     default: false,
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   hasAccommodation?: boolean;
@@ -386,6 +403,10 @@ export class CreateDelegateDto {
     type: AccommodationDetailsDto,
     description: 'Accommodation details if hasAccommodation is true',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @IsOptional()
   @ValidateNested()
   @Type(() => AccommodationDetailsDto)
@@ -396,6 +417,7 @@ export class CreateDelegateDto {
     example: false,
     default: false,
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   requiresVisa?: boolean;
@@ -428,6 +450,10 @@ export class CreateDelegateDto {
     type: FlightDetailsDto,
     description: 'Flight information',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @IsOptional()
   @ValidateNested()
   @Type(() => FlightDetailsDto)
@@ -437,6 +463,10 @@ export class CreateDelegateDto {
     type: SocialMediaDto,
     description: 'Social media profiles',
   })
+  @Transform(
+    ({ value }) => (typeof value === 'string' ? JSON.parse(value) : value),
+    { toClassOnly: true },
+  )
   @IsOptional()
   @ValidateNested()
   @Type(() => SocialMediaDto)
@@ -455,6 +485,7 @@ export class CreateDelegateDto {
     example: true,
     default: true,
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   consentToPhotography?: boolean;
@@ -464,6 +495,7 @@ export class CreateDelegateDto {
     example: true,
     default: true,
   })
+  @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean()
   consentToDataProcessing?: boolean;

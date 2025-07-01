@@ -19,14 +19,14 @@ async function bootstrap() {
   app.enableCors();
 
   // Use global validation pipe
-  // app.useGlobalPipes(
-  //   new ValidationPipe({
-  //     transform: true,
-  //     whitelist: true,
-  //     // forbidNonWhitelisted: true, // Reject requests with properties not defined in DTO
-  //     // skipMissingProperties: false, // Ensure all properties are validated, even if missing
-  //   }),
-  // );
+  app.useGlobalPipes(
+    new ValidationPipe({
+      transform: true,
+      whitelist: true,
+      // forbidNonWhitelisted: true, // Reject requests with properties not defined in DTO
+      // skipMissingProperties: false, // Ensure all properties are validated, even if missing
+    }),
+  );
 
   // Set global prefix for all routes
   app.setGlobalPrefix('shaf/api');

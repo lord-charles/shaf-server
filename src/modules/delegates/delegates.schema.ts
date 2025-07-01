@@ -105,7 +105,6 @@ export class Delegate {
 
   @Prop({
     type: Number,
-    required: true,
     comment:
       'The year of the event this delegate registration pertains to. Should be derived from the associated event.',
   })
