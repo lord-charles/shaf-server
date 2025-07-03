@@ -67,6 +67,7 @@ import { CloudinaryService } from '../cloudinary/cloudinary.service';
 import { RegisterPushTokenDto } from '../auth/dto/register-push-token.dto';
 import { NotificationService } from '../notifications/services/notification.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import * as sharp from 'sharp';
 
 @ApiTags('Delegates')
 @ApiBearerAuth()
@@ -91,32 +92,49 @@ export class DelegatesController {
       ],
       {
         limits: {
-          fileSize: 5 * 1024 * 1024, // 5MB limit
+          fileSize: 10 * 1024 * 1024, // 10MB limit to accommodate larger raw images
         },
         fileFilter: (req, file, cb) => {
-          if (
-            file.fieldname === 'profilePicture' &&
-            !file.originalname.match(/\.(jpg|jpeg|png|gif)$/)
-          ) {
-            return cb(
-              new BadRequestException(
-                'Only image files are allowed for profile picture',
-              ),
-              false,
-            );
+          if (file.fieldname === 'profilePicture') {
+            const allowedMimes = [
+              'image/jpeg',
+              'image/png',
+              'image/jpg',
+              'image/gif',
+              'image/heic',
+              'image/heif',
+            ];
+            if (allowedMimes.includes(file.mimetype)) {
+              cb(null, true);
+            } else {
+              cb(
+                new BadRequestException(
+                  'Only image files (jpg, png, gif, heic) are allowed for profile picture',
+                ),
+                false,
+              );
+            }
+          } else if (file.fieldname === 'document') {
+            const allowedMimes = [
+              'application/pdf',
+              'application/msword',
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              'image/jpeg',
+              'image/png',
+            ];
+            if (allowedMimes.includes(file.mimetype)) {
+              cb(null, true);
+            } else {
+              cb(
+                new BadRequestException(
+                  'Only PDF, DOC, DOCX, JPG, PNG files are allowed for documents',
+                ),
+                false,
+              );
+            }
+          } else {
+            cb(null, true);
           }
-          if (
-            file.fieldname === 'document' &&
-            !file.originalname.match(/\.(pdf|doc|docx|jpg|png|jpeg)$/i)
-          ) {
-            return cb(
-              new BadRequestException(
-                'Only PDF, DOC, DOCX, JPG, PNG, JPEG files are allowed for documents',
-              ),
-              false,
-            );
-          }
-          cb(null, true);
         },
       },
     ),
@@ -151,85 +169,53 @@ export class DelegatesController {
         profilePicture: {
           type: 'string',
           format: 'binary',
-          description: 'Profile picture file (JPEG, PNG, max 5MB)',
+          description: 'Profile picture of the delegate (JPG, PNG, GIF, HEIC).',
         },
         document: {
           type: 'string',
           format: 'binary',
-          description: 'Identification document file (PDF, DOCX, max 5MB)',
+          description: 'Identification document (PDF, DOC, DOCX, JPG, PNG).',
         },
-        title: { type: 'string', example: Title.DR },
-        firstName: { type: 'string', example: 'John' },
-        lastName: { type: 'string', example: 'Doe' },
-        email: {
-          type: 'string',
-          format: 'email',
-          example: 'john.doe@example.com',
-        },
-        isAdmin: { type: 'boolean', example: false },
-        eventYear: { type: 'number', example: 2025 },
-        phoneNumber: { type: 'string', example: '+254712345678' },
-        nationality: { type: 'string', example: 'Kenyan' },
-        organization: { type: 'string', example: 'Kenya Commercial Bank' },
-        position: { type: 'string', example: 'Chief Executive Officer' },
-        delegateType: {
-          type: 'string',
-          enum: Object.values(DelegateType),
-          example: DelegateType.GUEST,
-        },
+        title: { type: 'string', enum: Object.values(Title) },
+        firstName: { type: 'string' },
+        lastName: { type: 'string' },
+        email: { type: 'string', format: 'email' },
+        eventYear: { type: 'number' },
+        phoneNumber: { type: 'string' },
+        nationality: { type: 'string' },
+        delegateType: { type: 'string', enum: Object.values(DelegateType) },
         attendanceMode: {
           type: 'string',
           enum: Object.values(AttendanceMode),
-          example: AttendanceMode.PHYSICAL,
         },
         identification: {
           type: 'object',
-          required: ['type', 'number', 'issuingCountry'],
           properties: {
             type: {
               type: 'string',
               enum: Object.values(IdentificationType),
-              example: IdentificationType.PASSPORT,
             },
-            number: { type: 'string', example: 'A1234567' },
-            expiryDate: {
-              type: 'string',
-              format: 'date-time',
-              example: '2030-12-31T00:00:00.000Z',
-            },
-            issuingCountry: { type: 'string', example: 'Kenya' },
+            number: { type: 'string' },
           },
         },
-        languagesSpoken: {
-          type: 'array',
-          items: { type: 'string' },
-          example: ['English', 'Swahili'],
-        },
-        preferredLanguage: { type: 'string', example: 'English' },
-        // eventId: { type: 'string', example: '60d5ecb74f4d2c001f5e4b2a' },
+        languagesSpoken: { type: 'array', items: { type: 'string' } },
+        // eventId: { type: 'string' },
         address: {
           type: 'object',
-          required: ['street', 'city', 'state', 'country', 'postalCode'],
           properties: {
-            street: { type: 'string', example: '123 Uhuru Highway' },
-            city: { type: 'string', example: 'Nairobi' },
-            state: { type: 'string', example: 'Nairobi County' },
-            country: { type: 'string', example: 'Kenya' },
-            postalCode: { type: 'string', example: '00100' },
+            street: { type: 'string' },
+            city: { type: 'string' },
+            state: { type: 'string' },
+            country: { type: 'string' },
+            postalCode: { type: 'string' },
           },
         },
         emergencyContact: {
           type: 'object',
-          required: ['name', 'relationship', 'phoneNumber'],
           properties: {
-            name: { type: 'string', example: 'Jane Doe Smith' },
-            relationship: { type: 'string', example: 'Spouse' },
-            phoneNumber: { type: 'string', example: '+254712345678' },
-            email: {
-              type: 'string',
-              format: 'email',
-              example: 'jane.doe@example.com',
-            },
+            name: { type: 'string' },
+            relationship: { type: 'string' },
+            phone: { type: 'string' },
           },
         },
         hasAccommodation: { type: 'boolean', default: false },
@@ -345,9 +331,31 @@ export class DelegatesController {
         }
       }
     }
+
     if (files?.profilePicture?.[0]) {
+      let profilePictureFile = files.profilePicture[0];
+      const heicMimes = ['image/heic', 'image/heif'];
+
+      if (heicMimes.includes(profilePictureFile.mimetype)) {
+        this.logger.log(
+          `Converting HEIC image to JPEG for ${createDelegateDto.email}`,
+        );
+        const jpegBuffer = await sharp(profilePictureFile.buffer)
+          .jpeg({ quality: 90 })
+          .toBuffer();
+
+        profilePictureFile = {
+          ...profilePictureFile,
+          buffer: jpegBuffer,
+          mimetype: 'image/jpeg',
+          originalname: `${
+            profilePictureFile.originalname.split('.')[0]
+          }.jpeg`,
+        };
+      }
+
       const result = await this.cloudinaryService.uploadFile(
-        files.profilePicture[0],
+        profilePictureFile,
         'delegates/profile-pictures',
       );
       createDelegateDto.profilePicture = result.secure_url;
