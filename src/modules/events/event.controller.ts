@@ -40,7 +40,16 @@ import {
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Request as ExpressRequest } from 'express';
 import { Public } from '../auth/decorators/public.decorator';
+import { UsePipes, ValidationPipe } from '@nestjs/common';
 
+@UsePipes(
+  new ValidationPipe({
+    transform: true,
+    whitelist: true,
+    // forbidNonWhitelisted: true, // Reject requests with properties not defined in DTO
+    // skipMissingProperties: false, // Ensure all properties are validated, even if missing
+  }),
+)
 @ApiTags('Events Management')
 @Controller('events')
 @ApiBearerAuth()

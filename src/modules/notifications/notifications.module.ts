@@ -19,10 +19,7 @@ import {
     ]),
   ],
   controllers: [NotificationsController],
-  providers: [
-    NotificationService,
-    { provide: Expo, useValue: new Expo() },
-  ],
+  providers: [NotificationService, { provide: Expo, useValue: new Expo() }],
   exports: [NotificationService],
 })
 export class NotificationsModule {}

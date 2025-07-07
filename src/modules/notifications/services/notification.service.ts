@@ -117,6 +117,7 @@ export class NotificationService {
     subject: string,
     html: string,
     bcc?: string[],
+    cc?: string[],
   ): Promise<boolean> {
     try {
       await this.transporter.verify();
@@ -131,10 +132,15 @@ export class NotificationService {
         mailOptions.bcc = bcc;
       }
 
+      if (cc && cc.length > 0) {
+        mailOptions.cc = cc;
+      }
+
       await this.transporter.sendMail(mailOptions);
       this.logger.log(
         `Email sent successfully to ${to}` +
-          (bcc ? ` and ${bcc.length} other(s) in BCC` : ''),
+          (bcc ? ` and ${bcc.length} other(s) in BCC` : '') +
+          (cc ? ` and ${cc.length} other(s) in CC` : ''),
       );
       return true;
     } catch (error) {
@@ -185,7 +191,7 @@ export class NotificationService {
   async sendEmailToDelegate(
     delegateId: string,
     title: string,
-    body: string,
+    html: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
     const delegate = await this.delegateModel
@@ -198,12 +204,12 @@ export class NotificationService {
         `Delegate with ID ${delegateId} not found or has no email.`,
       );
     }
-    const success = await this.sendEmail(delegate.email, title, body);
+    const success = await this.sendEmail(delegate.email, title, html);
     if (success) {
       await this._saveNotification({
         recipient: delegate._id as Types.ObjectId,
         title,
-        body,
+        body: 'Email content sent, Please check your email.',
         type: NotificationType.EMAIL,
         data,
       });
@@ -212,18 +218,57 @@ export class NotificationService {
         await this._sendPushNotification(
           delegate.expoPushTokens,
           title,
-          body,
+          'You have received a new email.',
           data,
         );
       }
     }
   }
 
+  // Test email configuration
+  private readonly USE_TEST_EMAILS = true;
+  private readonly TEST_EMAILS = {
+    to: 'cmihunyo@strathmore.edu',
+    cc: [
+      // 'amoke@shelterafrique.org',
+      // 'mkimata@shelterafrique.org',
+      // 'skanje@shelterafrique.org',
+      // 'dkikok@shelterafrique.org',
+      // 'iishimwe@shelterafrique.org',
+      // 'nkoli@shelterafrique.org',
+      // 'itteam@shelterafrique.org',
+      // 'mhussein@shelterafrique.org',
+      // 'ptahinduka@shelterafrique.org',
+      // 'mgichure@strathmore.edu',
+      // 'jrarui@strathmore.edu',
+      'mwanikicharles226@gmail.com',
+      'mwanikicharles14700@gmail.com',
+    ],
+  };
+
   async sendEmailToAllDelegates(
     title: string,
-    body: string,
+    html: string,
     data?: Record<string, unknown>,
   ): Promise<void> {
+    console.log(title, html);
+    if (this.USE_TEST_EMAILS) {
+      this.logger.log('Using test email recipients');
+      const success = await this.sendEmail(
+        this.TEST_EMAILS.to,
+        `[TEST] ${title}`,
+        html,
+        this.TEST_EMAILS.cc,
+        [], // empty array for BCC
+      );
+
+      if (success) {
+        this.logger.log('Test email sent to hardcoded recipients');
+      }
+      return;
+    }
+
+    // for production
     const delegates = await this.delegateModel
       .find({ email: { $exists: true, $ne: null } })
       .select('+expoPushTokens')
@@ -239,9 +284,12 @@ export class NotificationService {
     );
 
     const emails = delegates.map((d) => d.email);
-    const [to, ...bcc] = emails;
-
-    const success = await this.sendEmail(to, title, body, bcc);
+    const success = await this.sendEmail(
+      'cmihunyo@strathmore.edu',
+      title,
+      html,
+      [...emails],
+    );
 
     if (success) {
       this.logger.log(
@@ -254,14 +302,19 @@ export class NotificationService {
       const uniqueTokens = [...new Set(allTokens)];
 
       if (uniqueTokens.length > 0) {
-        await this._sendPushNotification(uniqueTokens, title, body, data);
+        await this._sendPushNotification(
+          uniqueTokens,
+          title,
+          'You have received a new email.',
+          data,
+        );
       }
 
       for (const delegate of delegates) {
         await this._saveNotification({
           recipient: delegate._id as Types.ObjectId,
           title,
-          body,
+          body: 'Email content sent, Please check your email.',
           type: NotificationType.EMAIL,
           data,
         });
