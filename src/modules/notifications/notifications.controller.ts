@@ -9,7 +9,6 @@ import {
   Logger,
   Get,
   Patch,
-  Req,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -63,8 +62,6 @@ export class NotificationsController {
     @Param('delegateId') delegateId: string,
     @Body() payload: SendNotificationDto,
   ) {
-    console.log(payload);
-
     await this.notificationService.sendNotificationToDelegate(
       delegateId,
       payload.title,
@@ -95,7 +92,6 @@ export class NotificationsController {
     @Param('delegateId') delegateId: string,
     @Body() payload: SendEmailDto,
   ) {
-    console.log(payload);
     await this.notificationService.sendEmailToDelegate(
       delegateId,
       payload.title,
@@ -107,10 +103,10 @@ export class NotificationsController {
   @Post('email/all')
   @ApiOperation({ summary: 'Send an email to all delegates' })
   @HttpCode(HttpStatus.ACCEPTED)
-  async sendEmailToAll(@Req() req: any) {
+  async sendEmailToAll(@Body() payload: SendEmailDto) {
     await this.notificationService.sendEmailToAllDelegates(
-      req.body.title,
-      req.body.body,
+      payload.title,
+      payload.body,
     );
     return { message: 'Emails queued for all delegates.' };
   }
