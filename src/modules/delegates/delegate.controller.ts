@@ -682,7 +682,7 @@ export class DelegatesController {
   }
 
   @Delete('delete-account/:id')
-  @UseGuards(JwtAuthGuard)
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Delete delegate',
