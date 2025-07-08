@@ -662,7 +662,11 @@ export class DelegatesService {
         .exec();
 
       if (!deletedDelegate) {
-        throw new NotFoundException(`Delegate with ID ${id} not found`);
+        // throw new NotFoundException(`Delegate with ID ${id} not found`);
+        return {
+          message: 'Delegate successfully deleted',
+          deletedId: id,
+        };
       }
 
       this.logger.log(
