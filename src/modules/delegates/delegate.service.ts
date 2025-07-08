@@ -658,7 +658,7 @@ export class DelegatesService {
       }
 
       const deletedDelegate = await this.delegateModel
-        .findByIdAndDelete(id)
+        .findByIdAndDelete(new Types.ObjectId(id))
         .exec();
 
       if (!deletedDelegate) {
