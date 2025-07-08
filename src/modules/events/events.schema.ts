@@ -131,6 +131,7 @@ export class Event {
       objectives?: string[];
       liveStreamAvailable: boolean;
       recordingAvailable: boolean;
+      eventLink?: string;
     }>;
   }>;
 

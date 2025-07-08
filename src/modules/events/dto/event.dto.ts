@@ -441,6 +441,14 @@ export class SessionDto {
   })
   @IsBoolean()
   recordingAvailable: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Session event link',
+    example: 'https://events.shelterafrique.org/shaf/api/events/123',
+  })
+  @IsOptional()
+  @IsString()
+  eventLink?: string;
 }
 
 export class AgendaDto {
