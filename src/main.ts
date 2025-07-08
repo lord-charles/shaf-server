@@ -29,7 +29,7 @@ async function bootstrap() {
   );
 
   // Set global prefix for all routes
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('shaf/api');
 
   // Get the configuration service
   const configService = app.get(ConfigService);
@@ -48,7 +48,7 @@ async function bootstrap() {
   });
 
   // Setup Swagger under the global prefix path
-  SwaggerModule.setup('api/docs', app, document, {
+  SwaggerModule.setup('shaf/api/docs', app, document, {
     swaggerOptions: {
       persistAuthorization: true,
       defaultModelsExpandDepth: -1,
@@ -68,8 +68,8 @@ async function bootstrap() {
   const logger = new Logger('Bootstrap');
   logger.log(`Server is running on: http://localhost:${port}`);
   logger.log(
-    `API Documentation available at: http://localhost:${port}/api/docs`,
+    `API Documentation available at: http://localhost:${port}/shaf/api/docs`,
   );
-  logger.log(`API Base URL: http://localhost:${port}/api`);
+  logger.log(`API Base URL: http://localhost:${port}/shaf/api`);
 }
 bootstrap();
