@@ -348,9 +348,7 @@ export class DelegatesController {
           ...profilePictureFile,
           buffer: jpegBuffer,
           mimetype: 'image/jpeg',
-          originalname: `${
-            profilePictureFile.originalname.split('.')[0]
-          }.jpeg`,
+          originalname: `${profilePictureFile.originalname.split('.')[0]}.jpeg`,
         };
       }
 
@@ -683,7 +681,7 @@ export class DelegatesController {
     return await this.delegatesService.update(id, updateDelegateDto);
   }
 
-  @Delete(':id')
+  @Delete('delete-account/:id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
