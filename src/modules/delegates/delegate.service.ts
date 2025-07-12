@@ -785,7 +785,7 @@ export class DelegatesService {
   ): Promise<AuthResponse> {
     try {
       const user = await this.findDelegateForAuth(loginUserDto.email);
-
+      console.log(user);
       if (!user) {
         await this.systemLogsService.createLog(
           'ShafDb Login Failed',

@@ -1,6 +1,76 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
+// #region Sub-schemas
+
+@Schema({ _id: false })
+class EmergencyContactDetails {
+  @Prop()
+  name: string;
+
+  @Prop()
+  phone: string;
+
+  @Prop()
+  details: string;
+}
+
+@Schema({ _id: false })
+class TransportationOption {
+  @Prop()
+  type: string;
+
+  @Prop()
+  provider: string;
+
+  @Prop()
+  description: string;
+
+  @Prop()
+  estimatedCost: number;
+
+  @Prop({ type: [String] })
+  operatingHours: string[];
+
+  @Prop()
+  bookingInfo: string;
+}
+
+@Schema({ _id: false })
+class CurrencyBanking {
+  @Prop()
+  currencyName: string;
+
+  @Prop()
+  currencyCode: string;
+
+  @Prop()
+  exchangeRateUSD: number;
+
+  @Prop()
+  tips: string;
+
+  @Prop({ type: [String] })
+  acceptedCards: string[];
+}
+
+@Schema({ _id: false })
+class DataProtection {
+  @Prop()
+  overview: string;
+
+  @Prop({ type: [String] })
+  dataCollected: string[];
+
+  @Prop({ type: [String] })
+  delegateRights: string[];
+
+  @Prop()
+  privacyPolicyUrl: string;
+}
+
+// #endregion
+
 export enum AttendanceMode {
   PHYSICAL = 'physical',
   VIRTUAL = 'virtual',
@@ -33,17 +103,35 @@ export class Event {
   @Prop()
   shortDescription: string;
 
+  @Prop({ type: [String], default: [] })
+  keyThemes: string[];
+
+  @Prop({ type: [String], default: [] })
+  expectedOutcomes: string[];
+
   @Prop({ required: true })
   startDate: Date;
 
   @Prop({ required: true })
   endDate: Date;
 
+  @Prop()
+  eventDuration: number;
+
   @Prop({ required: true })
   registrationStartDate: Date;
 
   @Prop({ required: true })
   registrationEndDate: Date;
+
+  @Prop()
+  hostCity: string;
+
+  @Prop()
+  aboutHostCity: string;
+
+  @Prop()
+  timeZone: string;
 
   @Prop({ type: Object, required: true })
   location: {
@@ -203,7 +291,28 @@ export class Event {
       shuttleService: boolean;
       instructions?: string;
     };
+    emergencyMedical: {
+      contacts: EmergencyContactDetails[];
+    };
   };
+
+  @Prop()
+  airportInfo: string;
+
+  @Prop({ type: [TransportationOption], default: [] })
+  transportationOptions: TransportationOption[];
+
+  @Prop({ type: [String], default: [] })
+  culturalEtiquette: string[];
+
+  @Prop({ type: [String], default: [] })
+  healthPrecautions: string[];
+
+  @Prop({ type: CurrencyBanking, _id: false })
+  currencyBanking: CurrencyBanking;
+
+  @Prop({ type: DataProtection, _id: false })
+  dataProtection: DataProtection;
 
   @Prop({ type: Object })
   socialMedia: {

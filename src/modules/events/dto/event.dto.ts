@@ -19,6 +19,127 @@ import {
 import { Type } from 'class-transformer';
 import { EventStatus } from '../events.schema';
 
+// #region New Sub-DTOs
+
+export class EmergencyContactDetailsDto {
+  @ApiPropertyOptional({
+    description: 'Name of the emergency contact or service',
+  })
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @ApiProperty({ description: 'Phone number for the emergency contact' })
+  @IsString()
+  @IsNotEmpty()
+  phone: string;
+
+  @ApiPropertyOptional({ description: 'Additional details about the contact' })
+  @IsOptional()
+  @IsString()
+  details?: string;
+}
+
+export class TransportationOptionDto {
+  @ApiPropertyOptional({ description: 'Type of transportation' })
+  @IsOptional()
+  @IsString()
+  type?: string;
+
+  @ApiPropertyOptional({ description: 'Service provider' })
+  @IsOptional()
+  @IsString()
+  provider?: string;
+
+  @ApiPropertyOptional({ description: 'Description of the service' })
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Estimated cost' })
+  @IsOptional()
+  @IsNumber()
+  estimatedCost?: number;
+
+  @ApiPropertyOptional({ type: [String], description: 'Operating hours' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  operatingHours?: string[];
+
+  @ApiPropertyOptional({ description: 'Booking information' })
+  @IsOptional()
+  @IsString()
+  bookingInfo?: string;
+}
+
+export class CurrencyBankingDto {
+  @ApiPropertyOptional({ description: 'Local currency name' })
+  @IsOptional()
+  @IsString()
+  currencyName?: string;
+
+  @ApiPropertyOptional({ description: 'Local currency code' })
+  @IsOptional()
+  @IsString()
+  currencyCode?: string;
+
+  @ApiPropertyOptional({ description: 'Exchange rate against USD' })
+  @IsOptional()
+  @IsNumber()
+  exchangeRateUSD?: number;
+
+  @ApiPropertyOptional({
+    description: 'General tips about currency and banking',
+  })
+  @IsOptional()
+  @IsString()
+  tips?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Accepted credit/debit cards',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  acceptedCards?: string[];
+}
+
+export class DataProtectionDto {
+  @ApiPropertyOptional({
+    description: 'Overview of the data protection policy',
+  })
+  @IsOptional()
+  @IsString()
+  overview?: string;
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Types of data collected',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  dataCollected?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Rights of the delegates',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  delegateRights?: string[];
+
+  @ApiPropertyOptional({ description: 'URL to the full privacy policy' })
+  @IsOptional()
+  @IsUrl()
+  privacyPolicyUrl?: string;
+}
+
+// #endregion
+
 // Nested DTOs for complex objects
 
 export class AddressDto {
@@ -755,15 +876,15 @@ export class TransportationDto {
   instructions?: string;
 }
 
-export class LogisticsDto {
-  @ApiProperty({
-    description: 'Event timezone',
-    example: 'Africa/Nairobi',
-  })
-  @IsString()
-  @IsNotEmpty()
-  timezone: string;
+export class EmergencyMedicalDto {
+  @ApiProperty({ type: [EmergencyContactDetailsDto] })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => EmergencyContactDetailsDto)
+  contacts: EmergencyContactDetailsDto[];
+}
 
+export class LogisticsDto {
   @ApiProperty({
     description: 'Primary event language',
     example: 'English',
@@ -827,6 +948,15 @@ export class LogisticsDto {
   @ValidateNested()
   @Type(() => TransportationDto)
   transportation: TransportationDto;
+
+  @ApiPropertyOptional({
+    description: 'Emergency and medical contact information',
+    type: EmergencyMedicalDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => EmergencyMedicalDto)
+  emergencyMedical?: EmergencyMedicalDto;
 }
 
 export class SocialMediaDto {
@@ -942,6 +1072,26 @@ export class CreateEventDto {
   @IsString()
   shortDescription?: string;
 
+  @ApiPropertyOptional({
+    description: 'Key themes of the event',
+    type: [String],
+    example: ['Affordable Housing', 'Sustainable Urban Development'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  keyThemes?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Expected outcomes of the event',
+    type: [String],
+    example: ['Policy Recommendations', 'Partnership Agreements'],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  expectedOutcomes?: string[];
+
   @ApiProperty({
     description: 'Event start date and time',
     example: '2025-07-15T08:00:00.000Z',
@@ -956,6 +1106,14 @@ export class CreateEventDto {
   @IsDateString()
   endDate: string;
 
+  @ApiPropertyOptional({
+    description: 'Calculated duration of the event in days',
+    example: 3,
+  })
+  @IsOptional()
+  @IsNumber()
+  eventDuration?: number;
+
   @ApiProperty({
     description: 'Registration opening date',
     example: '2025-05-01T00:00:00.000Z',
@@ -969,6 +1127,30 @@ export class CreateEventDto {
   })
   @IsDateString()
   registrationEndDate: string;
+
+  @ApiPropertyOptional({
+    description: 'The host city of the event',
+    example: 'Nairobi',
+  })
+  @IsOptional()
+  @IsString()
+  hostCity?: string;
+
+  @ApiPropertyOptional({
+    description: 'A brief description of the host city',
+    example: 'Nairobi is the capital and largest city of Kenya.',
+  })
+  @IsOptional()
+  @IsString()
+  aboutHostCity?: string;
+
+  @ApiPropertyOptional({
+    description: 'The time zone of the event location',
+    example: 'Africa/Nairobi',
+  })
+  @IsOptional()
+  @IsString()
+  timeZone?: string;
 
   @ApiProperty({
     description: 'Event location details',
@@ -1093,6 +1275,61 @@ export class CreateEventDto {
   @ValidateNested()
   @Type(() => BrandingDto)
   branding?: BrandingDto;
+
+  @ApiPropertyOptional({
+    description: 'Information about the primary airport',
+    example:
+      'Jomo Kenyatta International Airport (NBO) is the main airport serving Nairobi.',
+  })
+  @IsOptional()
+  @IsString()
+  airportInfo?: string;
+
+  @ApiPropertyOptional({
+    description: 'Transportation options available for attendees',
+    type: [TransportationOptionDto],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TransportationOptionDto)
+  transportationOptions?: TransportationOptionDto[];
+
+  @ApiPropertyOptional({
+    description: 'Tips on local cultural etiquette',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  culturalEtiquette?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Health and safety precautions',
+    type: [String],
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  healthPrecautions?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Currency and banking information',
+    type: CurrencyBankingDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CurrencyBankingDto)
+  currencyBanking?: CurrencyBankingDto;
+
+  @ApiPropertyOptional({
+    description: 'Data protection and privacy information',
+    type: DataProtectionDto,
+  })
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DataProtectionDto)
+  dataProtection?: DataProtectionDto;
 
   @ApiPropertyOptional({
     description: 'Additional notes about the event',
