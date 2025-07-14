@@ -450,7 +450,7 @@ export class DelegatesService {
 
   async findAll(
     page: number = 1,
-    limit: number = 10,
+    limit: number = 1000,
     eventId?: string,
     delegateType?: string,
     attendanceMode?: string,
@@ -486,8 +486,8 @@ export class DelegatesService {
       const [delegates, total] = await Promise.all([
         this.delegateModel
           .find(filter)
-          .skip(skip)
-          .limit(limit)
+          // .skip(skip)
+          // .limit(limit)
           .sort({ createdAt: -1 })
           .exec(),
         this.delegateModel.countDocuments(filter).exec(),
