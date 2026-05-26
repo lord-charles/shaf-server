@@ -693,14 +693,27 @@ export class DelegatesService {
     }
   }
 
-  async getStatistics(eventId?: string): Promise<{
+  async getStatistics(eventId?: string, year?: number): Promise<{
     total: number;
+    approved: number;
+    pending: number;
+    rejected: number;
+    checkedIn: number;
+    physical: number;
+    virtual: number;
+    government: number;
+    private: number;
+    ngo: number;
+    countries: number;
+    organizations: number;
+    approvalRate: number;
+    checkInRate: number;
     byType: Record<string, number>;
     byAttendanceMode: Record<string, number>;
     byNationality: Record<string, number>;
   }> {
     try {
-      this.logger.log(`Generating delegate statistics`);
+      this.logger.log(`Generating delegate statistics - EventID: ${eventId || 'all'}, Year: ${year || 'all'}`);
 
       const filter: any = {};
       if (eventId) {
@@ -709,32 +722,71 @@ export class DelegatesService {
         }
         filter.eventId = eventId;
       }
+      if (year) {
+        filter.eventYear = year;
+      }
 
-      const [total, byType, byAttendanceMode, byNationality] =
-        await Promise.all([
-          this.delegateModel.countDocuments(filter).exec(),
-          this.delegateModel
-            .aggregate([
-              { $match: filter },
-              { $group: { _id: '$delegateType', count: { $sum: 1 } } },
-            ])
-            .exec(),
-          this.delegateModel
-            .aggregate([
-              { $match: filter },
-              { $group: { _id: '$attendanceMode', count: { $sum: 1 } } },
-            ])
-            .exec(),
-          this.delegateModel
-            .aggregate([
-              { $match: filter },
-              { $group: { _id: '$nationality', count: { $sum: 1 } } },
-            ])
-            .exec(),
-        ]);
+      const [
+        total,
+        approved,
+        pending,
+        rejected,
+        checkedIn,
+        physical,
+        virtual,
+        government,
+        privateCount,
+        ngo,
+        countriesList,
+        organizationsList,
+        byType,
+        byAttendanceMode,
+        byNationality
+      ] = await Promise.all([
+        this.delegateModel.countDocuments(filter).exec(),
+        this.delegateModel.countDocuments({ ...filter, status: 'approved' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, status: 'pending' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, status: 'rejected' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, hasCheckedIn: true }).exec(),
+        this.delegateModel.countDocuments({ ...filter, attendanceMode: 'physical' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, attendanceMode: 'virtual' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, delegateType: 'government' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, delegateType: 'private' }).exec(),
+        this.delegateModel.countDocuments({ ...filter, delegateType: 'ngo' }).exec(),
+        this.delegateModel.distinct('address.country', filter).exec(),
+        this.delegateModel.distinct('organization', filter).exec(),
+        this.delegateModel.aggregate([
+          { $match: filter },
+          { $group: { _id: '$delegateType', count: { $sum: 1 } } },
+        ]).exec(),
+        this.delegateModel.aggregate([
+          { $match: filter },
+          { $group: { _id: '$attendanceMode', count: { $sum: 1 } } },
+        ]).exec(),
+        this.delegateModel.aggregate([
+          { $match: filter },
+          { $group: { _id: '$nationality', count: { $sum: 1 } } },
+        ]).exec(),
+      ]);
+
+      const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
+      const checkInRate = approved > 0 ? Math.round((checkedIn / approved) * 100) : 0;
 
       const statistics = {
         total,
+        approved,
+        pending,
+        rejected,
+        checkedIn,
+        physical,
+        virtual,
+        government,
+        private: privateCount,
+        ngo,
+        countries: countriesList.filter(Boolean).length,
+        organizations: organizationsList.filter(Boolean).length,
+        approvalRate,
+        checkInRate,
         byType: byType.reduce((acc, item) => {
           acc[item._id] = item.count;
           return acc;

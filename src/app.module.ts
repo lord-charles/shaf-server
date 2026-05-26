@@ -24,7 +24,7 @@ import { InformationModule } from './information/information.module';
     SystemLogsModule,
     NotificationsModule,
     DelegatesModule,
-    QueuesModule,
+    // QueuesModule,
     EventsModule,
     NewsModule,
     VideoModule,

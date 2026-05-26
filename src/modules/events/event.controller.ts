@@ -537,6 +537,26 @@ export class EventsController {
     }
   }
 
+  @Get('years')
+  @Public()
+  @ApiOperation({
+    summary: 'Get all distinct event years',
+    description: 'Retrieves all distinct event years registered in the system.',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'List of event years successfully retrieved',
+    schema: {
+      type: 'array',
+      items: { type: 'number' },
+      example: [2025, 2024, 2023],
+    },
+  })
+  async getEventYears(): Promise<number[]> {
+    this.logger.log('GET /events/years - Fetching distinct event years');
+    return await this.eventsService.getEventYears();
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({

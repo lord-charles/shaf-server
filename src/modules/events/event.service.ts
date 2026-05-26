@@ -814,4 +814,21 @@ export class EventsService {
       ...updateDto,
     });
   }
+
+  /**
+   * Fetch all distinct years of events registered in the database
+   */
+  async getEventYears(): Promise<number[]> {
+    try {
+      this.logger.debug('Fetching distinct event years');
+      const years = await this.eventModel.distinct('eventYear').exec();
+      return years.sort((a, b) => b - a);
+    } catch (error) {
+      this.logger.error(`Failed to fetch event years: ${error.message}`, error.stack);
+      throw new HttpException(
+        'Failed to retrieve event years due to internal error',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
 }

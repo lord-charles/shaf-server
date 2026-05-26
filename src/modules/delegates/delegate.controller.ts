@@ -569,11 +569,20 @@ export class DelegatesController {
     type: String,
     description: 'Filter statistics by event ID',
   })
-  async getStatistics(@Query('eventId') eventId?: string) {
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    type: Number,
+    description: 'Filter statistics by event year',
+  })
+  async getStatistics(
+    @Query('eventId') eventId?: string,
+    @Query('year') year?: number,
+  ) {
     this.logger.log(
-      `GET /delegates/statistics - Event ID: ${eventId || 'all'}`,
+      `GET /delegates/statistics - Event ID: ${eventId || 'all'}, Year: ${year || 'all'}`,
     );
-    return await this.delegatesService.getStatistics(eventId);
+    return await this.delegatesService.getStatistics(eventId, Number(year) || undefined);
   }
 
   @Get('email/:email')
