@@ -190,7 +190,7 @@ export class AuthService {
       await this.notificationService.sendRegistrationPassword(
         user.email,
         resetMessage,
-        user.phoneNumber
+        user.phoneNumber,
       );
 
       await this.systemLogsService.createLog(
