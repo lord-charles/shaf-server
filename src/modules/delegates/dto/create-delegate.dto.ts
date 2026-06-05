@@ -291,6 +291,14 @@ export class CreateDelegateDto {
   @IsString()
   position?: string;
 
+  @ApiPropertyOptional({
+    description: 'Category of the delegate',
+    example: 'VVIP',
+  })
+  @IsOptional()
+  @IsString()
+  category?: string;
+
   @ApiProperty({
     enum: DelegateType,
     description: 'Type of delegate',

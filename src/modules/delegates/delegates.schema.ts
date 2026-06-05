@@ -76,6 +76,9 @@ export class Delegate {
   @Prop()
   isAdmin: boolean;
 
+  @Prop()
+  category: string;
+
   @Prop({ type: String, enum: DelegateType, required: true })
   delegateType: DelegateType;
 
