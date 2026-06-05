@@ -98,22 +98,22 @@ export class DelegatesService {
     const qrCodeBuffer = await QRCode.toBuffer(qrCodeData);
 
     // 2. Create and send email with a professional badge
-    const emailSubject = 'Your Registration has been Approved!';
-    const emailBody = this.createApprovalEmailTemplate(delegate);
-    this.notificationService
-      .sendEmailWithAttachments(delegate.email, emailSubject, emailBody, [
-        {
-          filename: 'qr-code-badge.png',
-          content: qrCodeBuffer,
-          cid: 'qr-code-badge',
-        },
-      ])
-      .catch((err) => {
-        this.logger.error(
-          `Failed to send approval email to ${delegate.email}: ${err.message}`,
-          err.stack,
-        );
-      });
+    // const emailSubject = 'Your Registration has been Approved!';
+    // const emailBody = this.createApprovalEmailTemplate(delegate);
+    // this.notificationService
+    //   .sendEmailWithAttachments(delegate.email, emailSubject, emailBody, [
+    //     {
+    //       filename: 'qr-code-badge.png',
+    //       content: qrCodeBuffer,
+    //       cid: 'qr-code-badge',
+    //     },
+    //   ])
+    //   .catch((err) => {
+    //     this.logger.error(
+    //       `Failed to send approval email to ${delegate.email}: ${err.message}`,
+    //       err.stack,
+    //     );
+    //   });
 
     // 3. Send push notification
     const pushTitle = 'Registration Approved!';
@@ -164,14 +164,14 @@ export class DelegatesService {
     // 1. Send email notification
     const emailSubject = 'Update on Your Registration Status';
     const emailBody = `<p>Dear ${delegateName},</p><p>We regret to inform you that your registration has been rejected. Reason: ${delegate.rejectionReason}.</p><p>If you believe this is an error, please contact our support team.</p>`;
-    this.notificationService
-      .sendEmail(delegate.email, emailSubject, emailBody)
-      .catch((err) => {
-        this.logger.error(
-          `Failed to send rejection email to ${delegate.email}: ${err.message}`,
-          err.stack,
-        );
-      });
+    // this.notificationService
+    //   .sendEmail(delegate.email, emailSubject, emailBody)
+    //   .catch((err) => {
+    //     this.logger.error(
+    //       `Failed to send rejection email to ${delegate.email}: ${err.message}`,
+    //       err.stack,
+    //     );
+    //   });
 
     // 2. Send push notification
     const pushTitle = 'Registration Update';
@@ -376,19 +376,19 @@ export class DelegatesService {
       const emailBody =
         this.createRegistrationReceivedEmailTemplate(savedDelegate);
 
-      this.notificationService
-        .sendEmail(savedDelegate.email, emailSubject, emailBody)
-        .then(() => {
-          this.logger.log(
-            `Sent registration confirmation email to: ${savedDelegate.email}`,
-          );
-        })
-        .catch((err) => {
-          this.logger.error(
-            `Failed to send registration email to ${savedDelegate.email}: ${err.message}`,
-            err.stack,
-          );
-        });
+      // this.notificationService
+      //   .sendEmail(savedDelegate.email, emailSubject, emailBody)
+      //   .then(() => {
+      //     this.logger.log(
+      //       `Sent registration confirmation email to: ${savedDelegate.email}`,
+      //     );
+      //   })
+      //   .catch((err) => {
+      //     this.logger.error(
+      //       `Failed to send registration email to ${savedDelegate.email}: ${err.message}`,
+      //       err.stack,
+      //     );
+      //   });
       // --- End of Email Notification ---
 
       // --- Schedule Push Notification via BullMQ ---
@@ -693,7 +693,10 @@ export class DelegatesService {
     }
   }
 
-  async getStatistics(eventId?: string, year?: number): Promise<{
+  async getStatistics(
+    eventId?: string,
+    year?: number,
+  ): Promise<{
     total: number;
     approved: number;
     pending: number;
@@ -713,7 +716,9 @@ export class DelegatesService {
     byNationality: Record<string, number>;
   }> {
     try {
-      this.logger.log(`Generating delegate statistics - EventID: ${eventId || 'all'}, Year: ${year || 'all'}`);
+      this.logger.log(
+        `Generating delegate statistics - EventID: ${eventId || 'all'}, Year: ${year || 'all'}`,
+      );
 
       const filter: any = {};
       if (eventId) {
@@ -741,36 +746,61 @@ export class DelegatesService {
         organizationsList,
         byType,
         byAttendanceMode,
-        byNationality
+        byNationality,
       ] = await Promise.all([
         this.delegateModel.countDocuments(filter).exec(),
-        this.delegateModel.countDocuments({ ...filter, status: 'approved' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, status: 'pending' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, status: 'rejected' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, hasCheckedIn: true }).exec(),
-        this.delegateModel.countDocuments({ ...filter, attendanceMode: 'physical' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, attendanceMode: 'virtual' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, delegateType: 'government' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, delegateType: 'private' }).exec(),
-        this.delegateModel.countDocuments({ ...filter, delegateType: 'ngo' }).exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, status: 'approved' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, status: 'pending' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, status: 'rejected' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, hasCheckedIn: true })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, attendanceMode: 'physical' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, attendanceMode: 'virtual' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, delegateType: 'government' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, delegateType: 'private' })
+          .exec(),
+        this.delegateModel
+          .countDocuments({ ...filter, delegateType: 'ngo' })
+          .exec(),
         this.delegateModel.distinct('address.country', filter).exec(),
         this.delegateModel.distinct('organization', filter).exec(),
-        this.delegateModel.aggregate([
-          { $match: filter },
-          { $group: { _id: '$delegateType', count: { $sum: 1 } } },
-        ]).exec(),
-        this.delegateModel.aggregate([
-          { $match: filter },
-          { $group: { _id: '$attendanceMode', count: { $sum: 1 } } },
-        ]).exec(),
-        this.delegateModel.aggregate([
-          { $match: filter },
-          { $group: { _id: '$nationality', count: { $sum: 1 } } },
-        ]).exec(),
+        this.delegateModel
+          .aggregate([
+            { $match: filter },
+            { $group: { _id: '$delegateType', count: { $sum: 1 } } },
+          ])
+          .exec(),
+        this.delegateModel
+          .aggregate([
+            { $match: filter },
+            { $group: { _id: '$attendanceMode', count: { $sum: 1 } } },
+          ])
+          .exec(),
+        this.delegateModel
+          .aggregate([
+            { $match: filter },
+            { $group: { _id: '$nationality', count: { $sum: 1 } } },
+          ])
+          .exec(),
       ]);
 
       const approvalRate = total > 0 ? Math.round((approved / total) * 100) : 0;
-      const checkInRate = approved > 0 ? Math.round((checkedIn / approved) * 100) : 0;
+      const checkInRate =
+        approved > 0 ? Math.round((checkedIn / approved) * 100) : 0;
 
       const statistics = {
         total,

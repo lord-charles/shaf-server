@@ -188,9 +188,9 @@ export class AuthService {
 
       const resetMessage = `Your ShafDb password reset PIN is: ${resetPin}. This PIN will expire in 10 minutes. Please keep this PIN secure and do not share it with anyone.`;
       await this.notificationService.sendRegistrationPassword(
-        user.phoneNumber,
         user.email,
         resetMessage,
+        user.phoneNumber,
       );
 
       await this.systemLogsService.createLog(

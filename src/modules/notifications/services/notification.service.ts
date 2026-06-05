@@ -30,7 +30,7 @@ export class NotificationService {
       service: this.configService.get<string>('SMTP_SERVICE'),
       host: this.configService.get<string>('SMTP_HOST'),
       port: this.configService.get<number>('SMTP_PORT'),
-      secure: true, // true for 465, false for other ports
+      secure: false, // true for 465, false for other ports : office365 uses 587
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
